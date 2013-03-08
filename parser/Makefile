@@ -4,8 +4,8 @@ parser: parser.o scanner.o
 %.o: %.c
 	gcc -Wall -c $*.c
 
-scanner.c: scanner.lex parser.h
-	flex -o scanner.c scanner.lex
+scanner.c: scanner.l parser.h
+	flex -o scanner.c scanner.l
 
 %.c %.h: %.y
 	bison -d -o $*.c $*.y
