@@ -1,3 +1,5 @@
+.SECONDARY:
+
 parser: parser.o scanner.o
 	gcc -Wall -o parser scanner.o parser.o -lfl
 

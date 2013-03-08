@@ -1,6 +1,7 @@
 %{
 #include <stdlib.h>
 #include <stdio.h>
+#define YYERROR_VERBOSE
 int yyerror(const char*);
 %}
 
@@ -85,6 +86,5 @@ int yyerror(const char *e) {
 }
 
 int main(int argc, char **argv) {
-	yyparse();
-	return 0;
+	return yyparse();
 }

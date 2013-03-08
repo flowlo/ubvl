@@ -21,9 +21,9 @@
 "not"			return T_NOT;
 "or"			return T_OR;
 ":="			return T_ASSIGN;
-[;\(\),:<#\[\]\-\+\*]	return yytext[0];
-[a-zA-Z][a-zA-Z0-9]*	return T_ID;		/* @{ @T_ID.name@ = strdup(yytext); @} */
-[0-9]+			return T_NUM;		/* @{ @T_NUM.val@ = atoi(yytext); @} */
-\$[0-9a-fA-F]+		return T_NUM;		/* @{ unsigned int hex; sscanf(yytext + 1, "%X", &hex); @T_NUM.val@ = hex; @} */
+(;|\(|\)|,|:|<|#|\[|\]|-|\+|\*)	return yytext[0];
+[a-zA-Z][a-zA-Z0-9]*	return T_ID;
+[0-9]+			return T_NUM;
+\$[0-9a-fA-F]+		return T_NUM;
 
 . printf("lexical error reading token: '%s'\n", yytext); exit(1);
