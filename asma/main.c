@@ -1,4 +1,6 @@
-int asma(char*);
+#include <stdlib.h>
+
+extern int asma(char*);
 
 /*int asma(char *s) {
 	int c = 0, i;
@@ -9,5 +11,5 @@ int asma(char*);
 }*/
 
 int main(int argc, char** argv) {
-	return asma("Das sind 3 Abstaende.");
+	exit(asma("    "));
 }

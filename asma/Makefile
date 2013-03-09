@@ -1,8 +1,8 @@
 asma.o:
-	gcc -c asma.s
+	gcc -g -c asma.s
 
 main.o:
-	gcc -c main.c
+	gcc -g -c main.c
 
 debug: asma.o main.o
 	gcc -g -Wall asma.o main.o -o asma
