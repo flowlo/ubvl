@@ -69,11 +69,11 @@ Term: '(' Expr ')'
 	| Term '[' Expr ']'				/* lesender Arrayzugriff */
 	| T_ID 						/* Variablenverwendung */
 	| T_ID '(' ')' ':' Type				/* Funktionsaufruf */
-	| T_ID '(' Parlist ')' ':' Type
+	| T_ID '(' Args ')' ':' Type
 ;
 
-Parlist: Expr
-	| Parlist ',' Expr
+Args: Expr
+	| Args ',' Expr
 ;
 
 %%
