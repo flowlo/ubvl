@@ -12,9 +12,9 @@ asma_mask:
 	.type asma, @function
 
 asma:
-	movdqa		asma_mask, %xmm1	# Initialize xmm1
-	movdqu		(%rdi), %xmm0		# Load target string from memory
-	pcmpeqb		%xmm1, %xmm0		# Replace all spaces with 0xff
-	pmovmskb	%xmm0, %rax		# Collapse XMM to a mask of MSBs
+	movdqa		asma_mask, %xmm8	# Initialize xmm8
+	movdqu		(%rdi), %xmm9		# Load target string from memory
+	pcmpeqb		%xmm8, %xmm9		# Replace all spaces with 0xff
+	pmovmskb	%xmm9, %rax		# Collapse XMM to a mask of MSBs
 	popcnt		%rax, %rax		# Count number of ones in %rcx and store it to %rcx
 	ret
