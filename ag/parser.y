@@ -9,7 +9,15 @@ int yyerror(const char*);
 %start Program
 
 @attributes { int value; } T_NUM
-@attributes { int name; } T_ID
+@attributes { char *name; int dimensions; } T_ID
+
+@attributes { symbol_table *vars; } Pars Stats Stat Bterm Bool Args
+
+@attributes { char* name; int dimensions; } Vardef
+@attributes { int dimensions; } Type
+@attributes { symbol_table *vars; int dimensions; } Expr Term Lexpr
+
+@traversal @postorder check
 
 %%
 
@@ -19,64 +27,193 @@ Program: Funcdef ';'
 ;
 
 Funcdef: T_ID '(' Pars ')' Stats T_END /* Funktionsdefinition */
+	@{
+		@i @Stats.vars@ = @Pars.vars@;
+	@}
 ;
 
 Pars: Vardef /* Parameterdefinition */
+	@{
+		@i @Pars.vars@ = symbol_table_add_variable(NULL, @Vardef.name@, @Vardef.dimensions@);
+	@}
 	| Pars ',' Vardef
+	@{
+		@i @Pars.0.vars@ = symbol_table_add_variable(@Pars.1.vars@, @Vardef.name@, @Vardef.dimensions@);
+	@}
 	|
 ;
 
 Vardef: T_ID ':' Type
+	@{
+		@i @Vardef.name@ = @T_ID.name@;
+		@i @Vardef.dimensions@ = @Type.dimensions@;
+	@}
 ;
 
 Type: T_INT
+	@{
+		@i @Type.dimensions@ = 0;
+	@}
 	| T_ARRAY T_OF Type
+	@{
+		@i @Type.0.dimensions@ = @Type.1.dimensions@ + 1;
+	@}
 ;
 
 Stats: Stat ';'
+	@{
+		@i @Stat.vars@ = @Stats.vars@;
+	@}
 	| Stats Stat ';'
+	@{
+		@i @Stat.vars@ = symbol_table_clone(@Stats.vars@);
+	@}
 	|
 ;
 
 Stat: T_RETURN Expr
+	@{
+		@i @Expr.vars@ = @Stat.vars@;
+	@}
 	| T_IF Bool T_THEN Stats T_END
+	@{
+		@i @Bool.vars@ = @Stat.vars@;
+		@i @Stats.vars@ = @Stat.vars@;
+	@}
 	| T_IF Bool T_THEN Stats T_ELSE Stats T_END
+	@{
+		@i @Bool.vars@ = @Stat.vars@;
+		@i @Stats.0.vars@ = @Stat.vars@;
+		@i @Stats.1.vars@ = @Stat.vars@;
+	@}
 	| T_WHILE Bool T_DO Stats T_END
+	@{
+		@i @Bool.vars@ = @Stat.vars@;
+		@i @Stats.vars@ = @Stat.vars@;
+	@}
 	| T_VAR Vardef T_ASSIGN Expr		/* Variablendefinition */
+	@{
+		@i @Expr.vars@ = @Stat.vars@;
+		/* TODO set dimensions?! */
+		@i symbol_table_add_variable(@Expr.vars@, @Vardef.name@, @Vardef.dimensions@);
+	@}
 	| Lexpr T_ASSIGN Expr		/* Zuweisung */
+	@{
+		@check assert_dimensions(@Stat.vars@, @Lexpr@, @Expr@);
+		@i @Expr.vars@ = @Stat.vars@;
+	@}
 	| Term
+	@{
+		@i @Term.vars@ = @Stat.vars@;
+	@}
 ;
 
 Bool: Bterm
+	@{
+		@i @Bterm.vars@ = @Bool.vars@;
+	@}
 	| Bool T_OR Bterm
+	@{
+		@i @Bool.1.vars@ = @Bool.0.vars@;
+		@i @Bterm.vars@ = @Bool.0.vars@;
+	@}
 ;
 
 Bterm: '(' Bool ')'
+	@{
+		@i @Bool.vars@ = @Bterm.vars@;
+	@}
 	| T_NOT Bterm
+	@{
+		@i @Bterm.1.vars@ = @Bterm.0.vars@;
+	@}
 	| Expr '#' Expr
+	@{
+		@check assert_dimensions(@Expr.0.dimensions@, 0);
+		@check assert_dimensions(@Expr.1.dimensions@, 0);
+		@i @Expr.0.vars@ = @Bterm.vars@;
+		@i @Expr.1.vars@ = @Bterm.vars@;
+	@}
 	| Expr '<' Expr
+	@{
+		@check assert_dimensions(@Expr.0.dimensions@, 0);
+		@check assert_dimensions(@Expr.1.dimensions@, 0);
+		@i @Expr.0.vars@ = @Bterm.vars@;
+		@i @Expr.1.vars@ = @Bterm.vars@;
+	@}
 ;
 
 Lexpr: T_ID 				/* schreibender Variablenzugriff */
+	@{
+		@check assert_variable_exists(@Lexpr.vars@, @T_ID.name@);
+		@i @Lexpr.dimensions@ = 0;
+	@}
 	| Term '[' Expr ']' 		/* schreibender Arrayzugriff */
+	@{
+		@i @Lexpr.dimensions@ = @Term.dimensions@ - 1;
+		@i @Term.vars@ = @Lexpr.vars@;
+		@i @Expr.vars@ = @Lexpr.vars@;
+	@}
 ;
 
 Expr: Term
+	@{
+		@i @Term.vars@ = @Expr.vars@;
+		@i @Expr.dimensions@ = @Term.dimensions@;
+	@}
 	| Expr '-' Term
+	@{
+		@check assert_dimensions(@Expr.dimensions@, 0);
+		@check assert_dimensions(@Term.dimensions@, 0);
+	@}
 	| Expr '+' Term
+	@{
+		@check assert_dimensions(@Expr.dimensions@, 0);
+		@check assert_dimensions(@Term.dimensions@, 0);
+	@}
 	| Expr '*' Term
+	@{
+		@check assert_dimensions(@Expr.dimensions@, 0);
+		@check assert_dimensions(@Term.dimensions@, 0);
+	@}
 ;
 
 Term: '(' Expr ')'
+	@{
+		@i @Expr.vars@ = @Term.vars@;
+		@i @Term.dimensions@ = @Expr.dimensions@;
+	@}
 	| T_NUM
+	@{
+		@i @Term.dimensions@ = 0;
+	@}
 	| Term '[' Expr ']'				/* lesender Arrayzugriff */
+	@{
+		@i @Term.1.vars@ = @Term.0.vars@;
+		@i @Expr.vars@ = @Term.0.vars@;
+		@i @Term.0.dimensions@ = @Term.1.dimensions@ - 1;
+	@}
 	| T_ID 						/* Variablenverwendung */
+	@{
+		@check assert_variable_exists(@Term.vars@, @T_ID.name@);
+		@i @Term.dimensions@ = symbol_table_get(@Term.vars@, @T_ID.name@).dimensions;
+	@}
 	| T_ID '(' ')' ':' Type	/* Funktionsaufruf */
-	| T_ID '(' Parlist ')' ':' Type
+	| T_ID '(' Args ')' ':' Type
+	@{
+		@i @Args.vars@ = @Term.vars@;
+	@}
 ;
 
-Parlist: Expr
-	| Parlist ',' Expr
+Args: Expr
+	@{
+		@i @Expr.vars@ = @Args.vars@;
+	@}
+	| Args ',' Expr
+	@{
+		@i @Expr.vars@ = @Args.vars@;
+		@i @Args.1.vars@ = @Args.0.vars@;
+	@}
 ;
 
 %%
