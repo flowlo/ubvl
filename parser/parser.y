@@ -15,10 +15,10 @@ Program: Funcdef ';'
 	|
 ;
 
-Funcdef: T_ID '(' Pars ')' Stats T_END /* Funktionsdefinition */
+Funcdef: T_ID '(' Pars ')' Stats T_END			/* Funktionsdefinition */
 ;
 
-Pars: Vardef /* Parameterdefinition */
+Pars: Vardef						/* Parameterdefinition */
 	| Pars ',' Vardef
 	|
 ;
@@ -39,8 +39,8 @@ Stat: T_RETURN Expr
 	| T_IF Bool T_THEN Stats T_END
 	| T_IF Bool T_THEN Stats T_ELSE Stats T_END
 	| T_WHILE Bool T_DO Stats T_END
-	| T_VAR Vardef T_ASSIGN Expr		/* Variablendefinition */
-	| Lexpr T_ASSIGN Expr		/* Zuweisung */
+	| T_VAR Vardef T_ASSIGN Expr			/* Variablendefinition */
+	| Lexpr T_ASSIGN Expr				/* Zuweisung */
 	| Term
 ;
 
@@ -54,8 +54,8 @@ Bterm: '(' Bool ')'
 	| Expr '<' Expr
 ;
 
-Lexpr: T_ID 				/* schreibender Variablenzugriff */
-	| Term '[' Expr ']' 		/* schreibender Arrayzugriff */
+Lexpr: T_ID 						/* schreibender Variablenzugriff */
+	| Term '[' Expr ']' 				/* schreibender Arrayzugriff */
 ;
 
 Expr: Term
@@ -68,7 +68,7 @@ Term: '(' Expr ')'
 	| T_NUM
 	| Term '[' Expr ']'				/* lesender Arrayzugriff */
 	| T_ID 						/* Variablenverwendung */
-	| T_ID '(' ')' ':' Type	/* Funktionsaufruf */
+	| T_ID '(' ')' ':' Type				/* Funktionsaufruf */
 	| T_ID '(' Parlist ')' ':' Type
 ;
 
