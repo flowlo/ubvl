@@ -8,6 +8,9 @@ int yyerror(const char*);
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
 %start Program
 
+@attributes { int value; } T_NUM
+@attributes { int name; } T_ID
+
 %%
 
 Program: Funcdef ';'
@@ -26,8 +29,8 @@ Pars: Vardef /* Parameterdefinition */
 Vardef: T_ID ':' Type
 ;
 
-Type: T_ARRAY T_OF T_INT
-	| T_INT
+Type: T_INT
+	| T_ARRAY T_OF Type
 ;
 
 Stats: Stat ';'

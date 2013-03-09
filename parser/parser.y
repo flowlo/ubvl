@@ -26,8 +26,8 @@ Pars: Vardef						/* Parameterdefinition */
 Vardef: T_ID ':' Type
 ;
 
-Type: T_ARRAY T_OF T_INT
-	| T_INT
+Type: T_INT
+	| T_ARRAY T_OF Type
 ;
 
 Stats: Stat ';'
