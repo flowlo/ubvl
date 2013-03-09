@@ -1,4 +1,4 @@
-	.ident "Lorenz Leutgeb <u1127842@student.tuwien.ac.at>"
+	.ident "Lorenz Leutgeb <lorenz.leutgeb@student.tuwien.ac.at>"
 
 	.data
 	.section .rodata
