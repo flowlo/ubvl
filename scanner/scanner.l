@@ -1,4 +1,5 @@
 %%
+
 --.*$ ;
 [ \n\t] ;
 
@@ -21,10 +22,12 @@
 }
 
 . {
-	printf("lexical error reading token: \"%s\"\n", yytext);
+	printf("lexical error reading token: '%s'\n", yytext);
 	return 1;
 }
+
 %%
+
 int main(int argc, char **argv) {
 	return yylex();
 }
