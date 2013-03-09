@@ -1,8 +1,11 @@
-asma:
-	gcc asma.s -o asma.o
+asma.o:
+	gcc -c asma.s
 
-debug:
-	gcc -g -Wall asma.s -o asma.o
+main.o:
+	gcc -c main.c
+
+debug: asma.o main.o
+	gcc -g -Wall asma.o main.o -o asma
 
 clean:
-	rm asma.o
+	rm -f asma.o main.o asma
