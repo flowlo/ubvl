@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #define YYERROR_VERBOSE
+
+extern int yylineno;
+
 int yyerror(const char*);
 %}
 
@@ -31,7 +34,7 @@ Type: T_INT
 ;
 
 Stats: Stat ';'
-	| Stats Stat ';'
+	| Stat ';' Stats
 	|
 ;
 
@@ -81,7 +84,7 @@ Args: Expr
 extern int yylineno;
 
 int yyerror(const char *e) {
-	printf("parser error '%s' on line %d\n", e, yylineno);
+	printf("%s on line %d\n", e, yylineno);
 	exit(2);
 }
 
