@@ -5,6 +5,8 @@
 #include "symbols.h"
 %}
 
+%option noyywrap
+
 %%
 
 --.*$				;
