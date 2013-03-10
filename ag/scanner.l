@@ -21,10 +21,22 @@
 "not"				return T_NOT;
 "or"				return T_OR;
 ":="				return T_ASSIGN;
-[0-9]+				return T_NUM;
-\$[0-9a-fA-F]+			return T_NUM;
-[a-zA-Z][a-zA-Z0-9]*		return T_ID;
+[0-9]+				return T_NUM; @{ @T_NUM.value@ = atol(yytext); @}
+\$[0-9a-fA-F]+			return T_NUM; @{ unsigned long hex; sscnaf(yytext + 1, "%x", &hex); @T_NUM.value@ = hex; @}
+[a-zA-Z][a-zA-Z0-9]*		return T_ID;  @{ @T_ID.name@ = strdup(yytext); @}
 
-(;|\(|\)|,|:|<|#|\[|\]|-|\+|\*)	return yytext[0];
+/* This is pretty lame, but return yytext[0] bothers ox. */
+";"				return ';';
+"("				return '(';
+")"				return ')';
+","				return ',';
+":"				return ':';
+"<"				return '<';
+"#"				return '#';
+"["				return '[';
+"]"				return ']';
+"-"				return '-';
+"+"				return '+';
+"*"				return '*';
 
 . printf("lexical error reading token: '%s'\n", yytext); exit(1);

@@ -1,6 +1,7 @@
 %{
 #include <stdlib.h>
 #include <stdio.h>
+#include "symbols.h"
 #define YYERROR_VERBOSE
 int yyerror(const char*);
 %}
@@ -8,8 +9,10 @@ int yyerror(const char*);
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
 %start Program
 
+@autoinh symbols
+
 @attributes { int value; } T_NUM
-@attributes { char *name; int dimensions; } T_ID
+@attributes { char *name; } T_ID
 
 @attributes { symbol_table *vars; } Pars Stats Stat Bterm Bool Args
 
@@ -18,6 +21,7 @@ int yyerror(const char*);
 @attributes { symbol_table *vars; int dimensions; } Expr Term Lexpr
 
 @traversal @postorder check
+@traversal @preorder run
 
 %%
 
@@ -41,6 +45,9 @@ Pars: Vardef /* Parameterdefinition */
 		@i @Pars.0.vars@ = symbol_table_add_variable(@Pars.1.vars@, @Vardef.name@, @Vardef.dimensions@);
 	@}
 	|
+	@{
+		@i @Pars.vars@ = NULL;
+	@}
 ;
 
 Vardef: T_ID ':' Type
@@ -64,16 +71,20 @@ Stats: Stat ';'
 	@{
 		@i @Stat.vars@ = @Stats.vars@;
 	@}
-	| Stats Stat ';'
+	| Stat ';' Stats
 	@{
-		@i @Stat.vars@ = symbol_table_clone(@Stats.vars@);
+		@i @Stats.1.vars@ = @Stats.0.vars@;
+		@i @Stat.vars@ = @Stats.0.vars@;
 	@}
-	|
+/*	|
+	@{
+		@i @Stat.vars@ = NULL;
+	@} */
 ;
 
 Stat: T_RETURN Expr
 	@{
-		@i @Expr.vars@ = @Stat.vars@;
+		@i  @Expr.vars@ = @Stat.vars@;
 	@}
 	| T_IF Bool T_THEN Stats T_END
 	@{
@@ -94,13 +105,13 @@ Stat: T_RETURN Expr
 	| T_VAR Vardef T_ASSIGN Expr		/* Variablendefinition */
 	@{
 		@i @Expr.vars@ = @Stat.vars@;
-		/* TODO set dimensions?! */
-		@i symbol_table_add_variable(@Expr.vars@, @Vardef.name@, @Vardef.dimensions@);
+		@run symbol_table_add_variable(@Expr.vars@, @Vardef.name@, @Vardef.dimensions@);
 	@}
 	| Lexpr T_ASSIGN Expr		/* Zuweisung */
 	@{
-		@check assert_dimensions(@Stat.vars@, @Lexpr@, @Expr@);
+		@check assert_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 		@i @Expr.vars@ = @Stat.vars@;
+		@i @Lexpr.vars@ = @Stat.vars@;
 	@}
 	| Term
 	@{
@@ -165,16 +176,25 @@ Expr: Term
 	@{
 		@check assert_dimensions(@Expr.dimensions@, 0);
 		@check assert_dimensions(@Term.dimensions@, 0);
+		@i @Term.vars@ = @Expr.0.vars@;
+		@i @Expr.1.vars@ = @Expr.0.vars@;
+		@i @Expr.0.dimensions@ = 0;
 	@}
 	| Expr '+' Term
 	@{
 		@check assert_dimensions(@Expr.dimensions@, 0);
 		@check assert_dimensions(@Term.dimensions@, 0);
+		@i @Term.vars@ = @Expr.1.vars@;
+		@i @Expr.1.vars@ = @Expr.0.vars@;
+		@i @Expr.0.dimensions@ = 0;
 	@}
 	| Expr '*' Term
 	@{
 		@check assert_dimensions(@Expr.dimensions@, 0);
 		@check assert_dimensions(@Term.dimensions@, 0);
+		@i @Term.vars@ = @Expr.1.vars@;
+		@i @Expr.1.vars@ = @Expr.0.vars@;
+		@i @Expr.0.dimensions@ = 0;
 	@}
 ;
 
@@ -199,9 +219,13 @@ Term: '(' Expr ')'
 		@i @Term.dimensions@ = symbol_table_get(@Term.vars@, @T_ID.name@).dimensions;
 	@}
 	| T_ID '(' ')' ':' Type	/* Funktionsaufruf */
+	@{
+		@i @Term.dimensions@ = @Type.dimensions@;
+	@}
 	| T_ID '(' Args ')' ':' Type
 	@{
 		@i @Args.vars@ = @Term.vars@;
+		@i @Term.dimensions@ = @Type.dimensions@;
 	@}
 ;
 
