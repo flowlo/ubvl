@@ -1,5 +1,8 @@
 %{
+#include <stdlib.h>
+#include <string.h>
 #include "parser.h"
+#include "symbols.h"
 %}
 
 %%
@@ -22,10 +25,12 @@
 "or"				return T_OR;
 ":="				return T_ASSIGN;
 [0-9]+				return T_NUM; @{ @T_NUM.value@ = atol(yytext); @}
-\$[0-9a-fA-F]+			return T_NUM; @{ unsigned long hex; sscnaf(yytext + 1, "%x", &hex); @T_NUM.value@ = hex; @}
+\$[0-9a-fA-F]+			return T_NUM; @{ unsigned long hex; sscanf(yytext + 1, "%lx", &hex); @T_NUM.value@ = hex; @}
 [a-zA-Z][a-zA-Z0-9]*		return T_ID;  @{ @T_ID.name@ = strdup(yytext); @}
 
+%{
 /* This is pretty lame, but return yytext[0] bothers ox. */
+%}
 ";"				return ';';
 "("				return '(';
 ")"				return ')';

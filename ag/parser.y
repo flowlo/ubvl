@@ -1,6 +1,8 @@
 %{
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 #include "symbols.h"
 #define YYERROR_VERBOSE
 int yyerror(const char*);
@@ -38,11 +40,11 @@ Funcdef: T_ID '(' Pars ')' Stats T_END /* Funktionsdefinition */
 
 Pars: Vardef /* Parameterdefinition */
 	@{
-		@i @Pars.vars@ = symbol_table_add_variable(NULL, @Vardef.name@, @Vardef.dimensions@);
+		@i @Pars.vars@ = symbol_table_add(NULL, @Vardef.name@, @Vardef.dimensions@, true);
 	@}
 	| Pars ',' Vardef
 	@{
-		@i @Pars.0.vars@ = symbol_table_add_variable(@Pars.1.vars@, @Vardef.name@, @Vardef.dimensions@);
+		@i @Pars.0.vars@ = symbol_table_add(@Pars.1.vars@, @Vardef.name@, @Vardef.dimensions@, true);
 	@}
 	|
 	@{
@@ -105,7 +107,7 @@ Stat: T_RETURN Expr
 	| T_VAR Vardef T_ASSIGN Expr		/* Variablendefinition */
 	@{
 		@i @Expr.vars@ = @Stat.vars@;
-		@run symbol_table_add_variable(@Expr.vars@, @Vardef.name@, @Vardef.dimensions@);
+		@run symbol_table_add(@Expr.vars@, @Vardef.name@, @Vardef.dimensions@, true);
 	@}
 	| Lexpr T_ASSIGN Expr		/* Zuweisung */
 	@{
@@ -216,7 +218,7 @@ Term: '(' Expr ')'
 	| T_ID 						/* Variablenverwendung */
 	@{
 		@check assert_variable_exists(@Term.vars@, @T_ID.name@);
-		@i @Term.dimensions@ = symbol_table_get(@Term.vars@, @T_ID.name@).dimensions;
+		@i @Term.dimensions@ = 0;
 	@}
 	| T_ID '(' ')' ':' Type	/* Funktionsaufruf */
 	@{

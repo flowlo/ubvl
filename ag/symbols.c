@@ -115,7 +115,7 @@ void check_not_label(symbol_table *table, char *id) {
   check_sym(table, id, SYMBOL_TYPE_VAR, true);
 }
 
-void check_variable_exists(symbol_table *table, char *id) {
+void assert_variable_exists(symbol_table *table, char *id) {
   check_sym(table, id, SYMBOL_TYPE_VAR, false);
 }
 
@@ -125,4 +125,11 @@ void check_not_variable(symbol_table *table, char *id) {
 
 void check_label_exists(symbol_table *table, char *id) {
   check_sym(table, id, SYMBOL_TYPE_LABEL, false);
+}
+
+void assert_dimensions(int a, int b) {
+	if (a != b) {
+		fprintf(stderr, "dimension mismatch\n");
+		exit(3);
+	}
 }
