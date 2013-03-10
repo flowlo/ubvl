@@ -24,9 +24,9 @@ int yyerror(const char*);
 
 @attributes { symbol_table *vars; } Pars Stats Stat Bterm Bool Args
 
-@attributes { char* name; int dimensions; } Vardef
-@attributes { int dimensions; } Type
-@attributes { symbol_table *vars; int dimensions; } Expr Term Lexpr
+@attributes { char* name; symbol_dimensions dimensions; } Vardef
+@attributes { symbol_dimensions dimensions; } Type
+@attributes { symbol_table *vars; symbol_dimensions dimensions; } Expr Term Lexpr
 
 @traversal @postorder check
 @traversal @postorder run
@@ -173,6 +173,8 @@ Lexpr: T_ID 				/* schreibender Variablenzugriff */
 	@}
 	| Term '[' Expr ']' 		/* schreibender Arrayzugriff */
 	@{
+		@check assert_array(@Term.dimensions@);
+		@check assert_int(@Term.dimensions@);
 		@i @Lexpr.dimensions@ = @Term.dimensions@ - 1;
 		@i @Term.vars@ = @Lexpr.vars@;
 		@i @Expr.vars@ = @Lexpr.vars@;

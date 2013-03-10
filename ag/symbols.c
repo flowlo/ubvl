@@ -127,6 +127,20 @@ void symbol_table_print(symbol_table *table) {
 	} while ((i = i->next) != NULL);
 }
 
+void assert_array(symbol_dimensions dimensions) {
+	if (dimensions < 1) {
+		fprintf(stderr, "trying to access int where array needed");
+		exit(3);
+	}
+}
+
+void assert_int(symbol_dimensions dimensions) {
+	if (dimensions < 1) {
+		fprintf(stderr, "trying to access array where int needed");
+		exit(3);
+	}
+}
+
 void symbol_table_print_descriptive(symbol_table *table, char *description) {
 	printf("%s:\n", description);
 	symbol_table_print(table);

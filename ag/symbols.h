@@ -22,7 +22,9 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 symbol_dimensions symbol_table_get_dimensions(symbol_table *table, char* id);
 void symbol_table_print(symbol_table *table);
 void symbol_table_print_descriptive(symbol_table *table, char* description);
-void assert_dimensions(int a, int b);
+void assert_dimensions(symbol_dimensions a, symbol_dimensions b);
+void assert_array(symbol_dimensions dimensions);
+void assert_int(symbol_dimensions dimensions);
 symbol_table *assert_variable_exists(symbol_table *table, char *id);
 void check_variable(symbol_table *table, char *id);
 void check_label(symbol_table *table, char *id);
