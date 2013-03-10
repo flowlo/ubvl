@@ -184,9 +184,9 @@ void check_label_exists(symbol_table *table, char *id) {
 //  check_sym(table, id, SYMBOL_TYPE_LABEL, false);
 }
 
-void assert_dimensions(int a, int b) {
+void assert_dimensions(symbol_dimensions a, symbol_dimensions b) {
 	if (a != b) {
-		fprintf(stderr, "dimension mismatch\n");
+		fprintf(stderr, "dimension mismatch (%d != %d)\n", a, b);
 		exit(3);
 	}
 }
