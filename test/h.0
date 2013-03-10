@@ -1,0 +1,6 @@
+main(arr : array of int, d2 : array of array of int)
+	var a : int := arr;
+	var b : int := arr[0];
+	b := arr[0] + a;
+	arr := d2[1];
+end;
