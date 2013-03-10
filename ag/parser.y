@@ -9,6 +9,7 @@
 extern int yylineno;
 
 int yyerror(const char*);
+int yylex();
 %}
 
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
@@ -263,5 +264,8 @@ int yyerror(const char *e) {
 
 int main(int argc, char **argv) {
 	yydebug = false;
-	return yyparse();
+	int result = yyparse();
+	if (result == 0)
+		printf("success!\n");
+	return result;
 }
