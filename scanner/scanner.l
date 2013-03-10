@@ -1,3 +1,7 @@
+%option nounput
+%option noinput
+%option noyywrap
+
 %%
 
 --.*$ ;
