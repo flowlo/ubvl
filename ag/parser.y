@@ -164,7 +164,7 @@ Bterm: '(' Bool ')'
 
 Lexpr: T_ID 				/* schreibender Variablenzugriff */
 	@{
-		@i @Lexpr.dimensions@ = 0;
+		@i @Lexpr.dimensions@ = -128;
 
 		@run @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.vars@, @T_ID.name@);
 
