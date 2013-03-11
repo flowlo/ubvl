@@ -4,23 +4,37 @@
 	.section .rodata
 	.align 16
 
-asma_mask:
+asmb_mask:
 	.byte 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20
 
 	.text
-	.globl asma
-	.type asma, @function
+	.globl asmb
+	.type asmb, @function
 
-asma:
-	movdqa		asma_mask, %xmm8	# Initialize xmm8
-	movdqu		(%rdi), %xmm9		# Load target string from memory
-	movq		$0, %r10
-	movq		$0, %rax
-
-	pcmpeqb		%xmm8, %xmm9		# Replace all spaces with 0xff
-	pmovmskb	%xmm9, %r11		# Collapse XMM to a mask of MSBs
-	popcnt		%r11, %r11		# Count number of ones in %rcx and store it to %rcx
+asmb:
+	movdqa		asmb_mask, %xmm8
+	leaq		0, %rax
+	leaq		(%rsi), %rcx
+	shrq		$4, %rcx
+	jrcxz		last
+loop:
+	movdqu		(%rdi), %xmm9
+	leaq		16 (%rdi), %rdi
+	pcmpeqb		%xmm8, %xmm9
+	pmovmskb	%xmm9, %r11
+	popcnt		%r11, %r11
 	leaq		(%rax, %r11), %rax
-	incw		$
-
+	loop		loop
+last:
+	andq		$15, %rsi
+	jz		end
+	xorq		$63, %rsi
+	leaq		1 (%rsi), %rcx
+	movdqu		(%rdi), %xmm9
+	pcmpeqb		%xmm8, %xmm9
+	pmovmskb	%xmm9, %r11
+	shlq		%cl, %r11
+	popcnt		%r11, %r11
+	leaq		(%rax, %r11), %rax
+end:
 	ret
