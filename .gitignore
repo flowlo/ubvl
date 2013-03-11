@@ -18,3 +18,21 @@
 
 # Temporary files
 *~
+
+# Specific binaries
+asma
+asmb
+scanner
+parser
+ag
+
+# flex output files
+scanner.c
+
+# bison output files
+parser.c
+parser.h
+
+# ox output files
+oxout.l
+oxout.y
