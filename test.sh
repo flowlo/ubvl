@@ -2,7 +2,7 @@
 shopt -s nullglob
 
 for i in test/*.0 ; do
-	./ag/ag < $i 2>1 > $i.out
+	./ag/ag < $i &> $i.out
 	if [ "$?" -eq "0" ] ; then
 		tput setaf 2
 		echo Grammar passed test \'$(basename $i)\'!
