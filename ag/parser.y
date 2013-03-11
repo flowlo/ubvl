@@ -281,9 +281,10 @@ int yyerror(const char *e) {
 }
 
 int main(int argc, char **argv) {
-	yydebug = false;
-	int result = yyparse();
-	if (result == 0)
-		printf("success!\n");
-	return result;
+	int i;
+	for (i = 1; i < argc; i++)
+		if (strcmp("-d", argv[i]) == 0 || strcmp("--debug", argv[i]) == 0)
+			yydebug = true;
+
+	return yyparse();
 }
