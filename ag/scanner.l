@@ -7,13 +7,15 @@
 #include <string.h>
 #include "parser.h"
 #include "symbols.h"
+
+extern int yylineno;
 %}
 
 %%
 
 --.*$				;
-[ \n\t]				;
-
+[ \t]				;
+"\n"				yylineno++;
 "end"				return T_END;
 "array"				return T_ARRAY;
 "of"				return T_OF;
@@ -48,4 +50,4 @@
 "+"				return '+';
 "*"				return '*';
 
-. printf("lexical error reading token: '%s'\n", yytext); exit(1);
+. printf("Lexical error reading token '%s' on line %d.\n", yytext, yylineno); exit(1);
