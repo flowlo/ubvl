@@ -14,9 +14,10 @@ int asma_ref(char *s)
 }
 
 int main(int argc, char** argv) {
-	if (asma(argv[1]) == asma_ref(argv[1]))
-		printf("ok\n");
-	else
-		printf(":(\n");
+	int asma_result = asma(argv[1]);
+	printf("asma:     %d\n", asma_result);
+	int asma_ref_result = asma_ref(argv[1]);
+	printf("asma_ref: %d\n", asma_ref_result);
+	printf(asma_ref_result == asma_result ? "ok\n" : "fail\n");
 	return 0;
 }
