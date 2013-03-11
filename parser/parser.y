@@ -81,8 +81,6 @@ Args: Expr
 
 %%
 
-extern int yylineno;
-
 int yyerror(const char *e) {
 	printf("%s on line %d\n", e, yylineno);
 	exit(2);

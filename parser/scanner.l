@@ -4,12 +4,15 @@
 
 %{
 #include "parser.h"
+
+extern int yylineno;
 %}
 
 %%
 
 --.*$				;
-[ \n\t]				;
+[ \t]				;
+"\n"				yylineno++;
 
 "end"				return T_END;
 "array"				return T_ARRAY;
@@ -31,4 +34,4 @@
 
 (;|\(|\)|,|:|<|#|\[|\]|-|\+|\*)	return yytext[0];
 
-. printf("lexical error reading token: '%s'\n", yytext); exit(1);
+. printf("Lexical error reading token '%s' on line %d.\n", yytext, yylineno); exit(1);
