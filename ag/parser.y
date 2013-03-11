@@ -68,14 +68,13 @@ Type: T_INT
 	@}
 	| T_ARRAY T_OF Type
 	@{
-		@i @Type.0.dimensions@ = @Type.1.dimensions@ + 1; printf("INCR dim @Type.0.dimensions@\n");
+		@i @Type.0.dimensions@ = @Type.1.dimensions@ + 1;
 	@}
 ;
 
 Stats: Stat ';'
 	@{
 		@i @Stat.vars@ = @Stats.vars@;
-		@assert symbol_table_print_descriptive(@Stats.vars@, "Stats.vars in Stats: Stat ';'");
 	@}
 	| Stats Stat ';'
 	@{
@@ -110,14 +109,15 @@ Stat: T_RETURN Expr
 	| T_VAR Vardef T_ASSIGN Expr		/* Variablendefinition */
 	@{
 		@i @Expr.vars@ = @Stat.vars@;
+
                 @run @Stat.vars@ = symbol_table_add(@Stat.vars@, @Vardef.name@, @Vardef.dimensions@, true);
 	@}
 	| Lexpr T_ASSIGN Expr		/* Zuweisung */
 	@{
-		@assert symbol_table_print_descriptive(@Stat.vars@, "Stat.vars in Stat: Lexpr T_ASSIGN Expr");
 		@i @Expr.vars@ = @Stat.vars@;
 		@i @Lexpr.vars@ = @Stat.vars@;
-		@assert assert_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
+
+		@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 	@}
 	| Term
 	@{
@@ -148,39 +148,47 @@ Bterm: '(' Bool ')'
 	@{
 		@i @Expr.0.vars@ = @Bterm.vars@;
 		@i @Expr.1.vars@ = @Bterm.vars@;
-		@assert assert_dimensions(@Expr.0.dimensions@, 0);
-		@assert assert_dimensions(@Expr.1.dimensions@, 0);
+
+		@assert is_integer(@Expr.0.dimensions@);
+		@assert is_integer(@Expr.1.dimensions@);
 	@}
 	| Expr '<' Expr
 	@{
 		@i @Expr.0.vars@ = @Bterm.vars@;
 		@i @Expr.1.vars@ = @Bterm.vars@;
-		@assert assert_dimensions(@Expr.0.dimensions@, 0);
-		@assert assert_dimensions(@Expr.1.dimensions@, 0);
+
+		@assert is_integer(@Expr.0.dimensions@);
+		@assert is_integer(@Expr.1.dimensions@);
 	@}
 ;
 
 Lexpr: T_ID 				/* schreibender Variablenzugriff */
 	@{
-		@assert char* a = "Lexpr.vars in Lexpr: "; char *msg = malloc(strlen(a) + strlen(@T_ID.name@) + 1); strcpy(msg, a); strcat(msg, @T_ID.name@); symbol_table_print_descriptive(@Lexpr.vars@, msg);
-		@i @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.vars@, @T_ID.name@);
-		@assert assert_variable_exists(@Lexpr.vars@, @T_ID.name@);
+		@i @Lexpr.dimensions@ = 0;
+
+		@run @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.vars@, @T_ID.name@);
+
+		@assert variable_exists(@Lexpr.vars@, @T_ID.name@);
 	@}
 	| Term '[' Expr ']' 		/* schreibender Arrayzugriff */
 	@{
-		@assert symbol_table_print_descriptive(@Lexpr.vars@, "Lexpr.vars in Lexpr: Term '[' Expr ']'");
-		@i @Lexpr.dimensions@ = @Term.dimensions@ - 1; printf("DECR @Lexpr.dimensions@\n");
+		@i @Lexpr.dimensions@ = -128;
 		@i @Term.vars@ = @Lexpr.vars@;
 		@i @Expr.vars@ = @Lexpr.vars@;
-		@assert assert_array(@Term.dimensions@);
-		@assert assert_int(@Expr.dimensions@);
+
+		@run @Lexpr.dimensions@ = @Term.dimensions@ - 1;
+
+		@assert is_array(@Term.dimensions@);
+		@assert is_integer(@Expr.dimensions@);
 	@}
 ;
 
 Expr: Term
 	@{
 		@i @Term.vars@ = @Expr.vars@;
-		@i @Expr.dimensions@ = @Term.dimensions@;
+		@i @Expr.dimensions@ = -128;
+
+		@run @Expr.dimensions@ = @Term.dimensions@;
 	@}
 	| Expr '-' Term
 	@{
@@ -188,8 +196,8 @@ Expr: Term
 		@i @Expr.1.vars@ = @Expr.0.vars@;
 		@i @Expr.0.dimensions@ = 0;
 
-		@assert assert_dimensions(@Expr.dimensions@, 0);
-		@assert assert_dimensions(@Term.dimensions@, 0);
+		@assert is_integer(@Expr.dimensions@);
+		@assert is_integer(@Term.dimensions@);
 
 	@}
 	| Expr '+' Term
@@ -198,8 +206,8 @@ Expr: Term
 		@i @Expr.1.vars@ = @Expr.0.vars@;
 		@i @Expr.0.dimensions@ = 0;
 
-		@assert assert_dimensions(@Expr.dimensions@, 0);
-		@assert assert_dimensions(@Term.dimensions@, 0);
+		@assert is_integer(@Expr.dimensions@);
+		@assert is_integer(@Term.dimensions@);
 	@}
 	| Expr '*' Term
 	@{
@@ -207,15 +215,17 @@ Expr: Term
 		@i @Expr.1.vars@ = @Expr.0.vars@;
 		@i @Expr.0.dimensions@ = 0;
 
-		@assert assert_dimensions(@Expr.dimensions@, 0);
-		@assert assert_dimensions(@Term.dimensions@, 0);
+		@assert is_integer(@Expr.dimensions@);
+		@assert is_integer(@Term.dimensions@);
 	@}
 ;
 
 Term: '(' Expr ')'
 	@{
+		@i @Term.dimensions@ = -128;
 		@i @Expr.vars@ = @Term.vars@;
-		@i @Term.dimensions@ = @Expr.dimensions@;
+
+		@run @Term.dimensions@ = @Expr.dimensions@;
 	@}
 	| T_NUM
 	@{
@@ -225,21 +235,30 @@ Term: '(' Expr ')'
 	@{
 		@i @Term.1.vars@ = @Term.0.vars@;
 		@i @Expr.vars@ = @Term.0.vars@;
-		@i @Term.0.dimensions@ = @Term.1.dimensions@ - 1; printf("DECR @Lexpr.dimensions@\n");
+		@i @Term.0.dimensions@ = -128;
+
+		@run @Term.0.dimensions@ = @Term.1.dimensions@ - 1;
 	@}
 	| T_ID 						/* Variablenverwendung */
 	@{
-		@i @Term.dimensions@ = symbol_table_get_dimensions(@Term.vars@, @T_ID.name@);
-		@assert assert_variable_exists(@Term.vars@, @T_ID.name@);
+		@i @Term.dimensions@ = -128;
+
+		@run @Term.dimensions@ = symbol_table_get_dimensions(@Term.vars@, @T_ID.name@);
+
+		@assert variable_exists(@Term.vars@, @T_ID.name@);
 	@}
 	| T_ID '(' ')' ':' Type	/* Funktionsaufruf */
 	@{
-		@i @Term.dimensions@ = @Type.dimensions@;
+		@i @Term.dimensions@ = -128;
+
+		@run @Term.dimensions@ = @Type.dimensions@;
 	@}
 	| T_ID '(' Args ')' ':' Type
 	@{
 		@i @Args.vars@ = @Term.vars@;
-		@i @Term.dimensions@ = @Type.dimensions@;
+		@i @Term.dimensions@ = -128;
+
+		@run @Term.dimensions@ = @Type.dimensions@;
 	@}
 ;
 

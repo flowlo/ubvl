@@ -5,8 +5,6 @@
 #include "symbols.h"
 #include "parser.h"
 
-extern int yylineno;
-
 symbol_table *symbol_table_clone(symbol_table *table) {
 	if (table == NULL)
 		return NULL;
@@ -24,7 +22,7 @@ symbol_table *symbol_table_new(void) {
 	symbol_table *result = malloc(sizeof(symbol_table));
 
 	if (result == NULL) {
-		fprintf(stderr, "Out of memory, malloc failed (tried to allocate %lu bytes)", sizeof(symbol_table));
+		fprintf(stderr, "Out of memory, malloc failed (tried to allocate %lu bytes).", sizeof(symbol_table));
 		exit(128);
 	}
 
@@ -39,7 +37,7 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 	symbol_table *result = malloc(sizeof(symbol_table));
 
 	if (result == NULL) {
-		fprintf(stderr, "Out of memory, malloc failed (tried to allocate %lu bytes)", sizeof(symbol_table));
+		fprintf(stderr, "Out of memory, malloc failed (tried to allocate %lu bytes).", sizeof(symbol_table));
 		exit(128);
 	}
 
@@ -52,7 +50,7 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 
 	if (symbol_table_get(table, id) != NULL) {
 		if (check) {
-			fprintf(stderr, "duplicate symbol '%s'.\n", id);
+			fprintf(stderr, "Duplicate symbol '%s'.\n", id);
 			exit(3);
 		}
 
@@ -77,7 +75,6 @@ symbol_table *symbol_table_get(symbol_table *table, char *id) {
 			return i;
 	} while ((i = i->next) != NULL);
 
-	fprintf(stderr, "get: unknown symbol '%s'\n", id);
 	return NULL;
 }
 
@@ -92,8 +89,10 @@ symbol_dimensions symbol_table_get_dimensions(symbol_table *table, char *id) {
 			return i->dimensions;
 	} while ((i = i->next) != NULL);
 
-	fprintf(stderr, "get_dimensions: unknown symbol '%s'\n", id);
-	return 0;
+	fprintf(stderr, "Unknown symbol '%s'.\n", id);
+	symbol_table_print(table);
+	exit(3);
+	return -128;
 }
 
 symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
@@ -138,76 +137,48 @@ symbol_table *symbol_table_del(symbol_table *table, char *id) {
 
 void symbol_table_print(symbol_table *table) {
 	if (table == NULL) {
-		printf("empty symbol table.\n");
+		printf("No symbols available.\n");
 		return;
 	}
 
+	fprintf(stderr, "Available symbols:\n");
+
 	symbol_table *i = table;
 	do {
-		printf("%s\t\t%d\n", i->id, i->dimensions);
+		if (i->dimensions)
+			fprintf(stderr, "%p\t%s\t%d-dimensional array\n", i, i->id, i->dimensions);
+		else
+			fprintf(stderr, "%p\t%s\tinteger\n", i, i->id);
 	} while ((i = i->next) != NULL);
 }
 
-void assert_array(symbol_dimensions dimensions) {
-	if (dimensions <= 0) {
-		fprintf(stderr, "trying to access int where array needed");
-		exit(3);
-	}
+void is_array(symbol_dimensions dimensions) {
+	if (dimensions > 0)
+		return;
+	fprintf(stderr, dimensions == 0 ? "Trying to access integer where array needed.\n" : "Trying to access symbol with invalid dimension of %d where array needed.\n", dimensions);
+	exit(3);
 }
 
-void assert_int(symbol_dimensions dimensions) {
+void is_integer(symbol_dimensions dimensions) {
 	if (dimensions != 0) {
-		fprintf(stderr, "trying to access %d-dimensional array where int needed", dimensions);
+		fprintf(stderr, "Trying to access %d-dimensional array where integer needed.\n", dimensions);
 		exit(3);
 	}
 }
 
-void symbol_table_print_descriptive(symbol_table *table, char *description) {
-	printf("%s:\n", description);
-	symbol_table_print(table);
-}
-
-void check_sym(symbol_table *table, char *id, symbol_dimensions dimensions, bool ignore_unknown) {
+void variable_exists(symbol_table *table, char *id) {
 	symbol_table *element = symbol_table_get(table, id);
 
 	if (element == NULL) {
-		if (!ignore_unknown) {
-			fprintf(stderr, "unknown symbol '%s'.\n", id);
-			exit(3);
-		}
-	}
-	else if (element->dimensions != dimensions) {
-		fprintf(stderr, "dimension mismatch for symbol '%s'.\n", id);
+		fprintf(stderr, "Unknown symbol '%s'.\n", id);
+		symbol_table_print(table);
 		exit(3);
 	}
 }
 
-void check_not_label(symbol_table *table, char *id) {
-//  check_sym(table, id, SYMBOL_TYPE_VAR, true);
-}
-
-symbol_table *assert_variable_exists(symbol_table *table, char *id) {
-	symbol_table *element = symbol_table_get(table, id);
-
-	if (element == NULL) {
-		fprintf(stderr, "unknown symbol '%s'\n", id);
-		exit(3);
-	}
-
-	return element;
-}
-
-void check_not_variable(symbol_table *table, char *id) {
-//  check_sym(table, id, SYMBOL_TYPE_LABEL, true);
-}
-
-void check_label_exists(symbol_table *table, char *id) {
-//  check_sym(table, id, SYMBOL_TYPE_LABEL, false);
-}
-
-void assert_dimensions(symbol_dimensions a, symbol_dimensions b) {
+void same_dimensions(symbol_dimensions a, symbol_dimensions b) {
 	if (a != b) {
-		fprintf(stderr, "dimension mismatch (%d != %d)\n", a, b);
+		fprintf(stderr, "Dimension mismatch (%d != %d).\n", a, b);
 		exit(3);
 	}
 }
