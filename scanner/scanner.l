@@ -2,10 +2,18 @@
 %option noinput
 %option noyywrap
 
+%{
+extern int yylineno;
+%}
+
 %%
 
 --.*$ ;
-[ \n\t] ;
+[ \t] ;
+
+"\n" {
+	yylineno++;
+}
 
 (end|array|of|int|return|if|then|else|while|do|var|not|or|;|\(|\)|,|:|:=|<|#|\[|\]|-|\+|\*) {
 	printf("%s\n", yytext);
@@ -26,7 +34,7 @@
 }
 
 . {
-	printf("lexical error reading token: '%s'\n", yytext);
+	printf("Lexical error reading token '%s' on line %d.\n", yytext, yylineno);
 	return 1;
 }
 
