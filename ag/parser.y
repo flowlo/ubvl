@@ -9,7 +9,7 @@
 extern int yylineno;
 
 int yyerror(const char*);
-int yylex();
+int yylex(void);
 %}
 
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
@@ -18,19 +18,15 @@ int yylex();
 %verbose
 %locations
 
-@autoinh symbols
+@attributes { int value; }						T_NUM
+@attributes { char *name; }						T_ID
+@attributes { symbol_table *vars; }					Pars Stats Stat Bterm Bool Args
+@attributes { symbol_dimensions dimensions; }				Type
+@attributes { char* name; symbol_dimensions dimensions; }		Vardef
+@attributes { symbol_table *vars; symbol_dimensions dimensions; }	Expr Term Lexpr
 
-@attributes { int value; } T_NUM
-@attributes { char *name; } T_ID
-
-@attributes { symbol_table *vars; } Pars Stats Stat Bterm Bool Args
-
-@attributes { char* name; symbol_dimensions dimensions; } Vardef
-@attributes { symbol_dimensions dimensions; } Type
-@attributes { symbol_table *vars; symbol_dimensions dimensions; } Expr Term Lexpr
-
-@traversal @postorder check
 @traversal @postorder run
+@traversal @postorder assert
 
 %%
 
@@ -41,7 +37,7 @@ Program: Funcdef ';'
 
 Funcdef: T_ID '(' Pars ')' Stats T_END /* Funktionsdefinition */
 	@{
-		@i @Stats.vars@ = @Pars.vars@;
+		@i @Stats.vars@ = symbol_table_merge(@Pars.vars@, @Stats.vars@, true);
 	@}
 ;
 
@@ -72,20 +68,19 @@ Type: T_INT
 	@}
 	| T_ARRAY T_OF Type
 	@{
-		@i @Type.0.dimensions@ = @Type.1.dimensions@ + 1;
+		@i @Type.0.dimensions@ = @Type.1.dimensions@ + 1; printf("INCR dim @Type.0.dimensions@\n");
 	@}
 ;
 
 Stats: Stat ';'
 	@{
 		@i @Stat.vars@ = @Stats.vars@;
-		@check symbol_table_print_descriptive(@Stats.vars@, "Stats.vars in Stats: Stat ';'");
+		@assert symbol_table_print_descriptive(@Stats.vars@, "Stats.vars in Stats: Stat ';'");
 	@}
-	| Stat ';' Stats
+	| Stats Stat ';'
 	@{
 		@i @Stats.1.vars@ = @Stats.0.vars@;
 		@i @Stat.vars@ = @Stats.0.vars@;
-		@check symbol_table_print_descriptive(@Stats.0.vars@, "Stats.0.vars in Stats: Stat ';' Stats");
 	@}
 	|
 	@{
@@ -94,7 +89,7 @@ Stats: Stat ';'
 
 Stat: T_RETURN Expr
 	@{
-		@i  @Expr.vars@ = @Stat.vars@;
+		@i @Expr.vars@ = @Stat.vars@;
 	@}
 	| T_IF Bool T_THEN Stats T_END
 	@{
@@ -115,14 +110,14 @@ Stat: T_RETURN Expr
 	| T_VAR Vardef T_ASSIGN Expr		/* Variablendefinition */
 	@{
 		@i @Expr.vars@ = @Stat.vars@;
-		@check @Stat.vars@ = symbol_table_add(@Stat.vars@, @Vardef.name@, @Vardef.dimensions@, true);
+                @run @Stat.vars@ = symbol_table_add(@Stat.vars@, @Vardef.name@, @Vardef.dimensions@, true);
 	@}
 	| Lexpr T_ASSIGN Expr		/* Zuweisung */
 	@{
-		@check assert_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
-		@check symbol_table_print_descriptive(@Stat.vars@, "Stat.vars in Stat: Lexpr T_ASSIGN Expr");
+		@assert symbol_table_print_descriptive(@Stat.vars@, "Stat.vars in Stat: Lexpr T_ASSIGN Expr");
 		@i @Expr.vars@ = @Stat.vars@;
 		@i @Lexpr.vars@ = @Stat.vars@;
+		@assert assert_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 	@}
 	| Term
 	@{
@@ -151,34 +146,34 @@ Bterm: '(' Bool ')'
 	@}
 	| Expr '#' Expr
 	@{
-		@check assert_dimensions(@Expr.0.dimensions@, 0);
-		@check assert_dimensions(@Expr.1.dimensions@, 0);
 		@i @Expr.0.vars@ = @Bterm.vars@;
 		@i @Expr.1.vars@ = @Bterm.vars@;
+		@assert assert_dimensions(@Expr.0.dimensions@, 0);
+		@assert assert_dimensions(@Expr.1.dimensions@, 0);
 	@}
 	| Expr '<' Expr
 	@{
-		@check assert_dimensions(@Expr.0.dimensions@, 0);
-		@check assert_dimensions(@Expr.1.dimensions@, 0);
 		@i @Expr.0.vars@ = @Bterm.vars@;
 		@i @Expr.1.vars@ = @Bterm.vars@;
+		@assert assert_dimensions(@Expr.0.dimensions@, 0);
+		@assert assert_dimensions(@Expr.1.dimensions@, 0);
 	@}
 ;
 
 Lexpr: T_ID 				/* schreibender Variablenzugriff */
 	@{
-		@check char* a = "Lexpr.vars in Lexpr: "; char *msg = malloc(strlen(a) + strlen(@T_ID.name@) + 1); strcpy(msg, a); strcat(msg, @T_ID.name@); symbol_table_print_descriptive(@Lexpr.vars@, msg);
-		@check assert_variable_exists(@Lexpr.vars@, @T_ID.name@);
-		@check @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.vars@, @T_ID.name@);
-		@i @Lexpr.dimensions@ = 0;
+		@assert char* a = "Lexpr.vars in Lexpr: "; char *msg = malloc(strlen(a) + strlen(@T_ID.name@) + 1); strcpy(msg, a); strcat(msg, @T_ID.name@); symbol_table_print_descriptive(@Lexpr.vars@, msg);
+		@i @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.vars@, @T_ID.name@);
+		@assert assert_variable_exists(@Lexpr.vars@, @T_ID.name@);
 	@}
 	| Term '[' Expr ']' 		/* schreibender Arrayzugriff */
 	@{
-		@check assert_array(@Term.dimensions@);
-		@check assert_int(@Term.dimensions@);
-		@i @Lexpr.dimensions@ = @Term.dimensions@ - 1;
+		@assert symbol_table_print_descriptive(@Lexpr.vars@, "Lexpr.vars in Lexpr: Term '[' Expr ']'");
+		@i @Lexpr.dimensions@ = @Term.dimensions@ - 1; printf("DECR @Lexpr.dimensions@\n");
 		@i @Term.vars@ = @Lexpr.vars@;
 		@i @Expr.vars@ = @Lexpr.vars@;
+		@assert assert_array(@Term.dimensions@);
+		@assert assert_int(@Expr.dimensions@);
 	@}
 ;
 
@@ -189,27 +184,31 @@ Expr: Term
 	@}
 	| Expr '-' Term
 	@{
-		@check assert_dimensions(@Expr.dimensions@, 0);
-		@check assert_dimensions(@Term.dimensions@, 0);
 		@i @Term.vars@ = @Expr.0.vars@;
 		@i @Expr.1.vars@ = @Expr.0.vars@;
 		@i @Expr.0.dimensions@ = 0;
+
+		@assert assert_dimensions(@Expr.dimensions@, 0);
+		@assert assert_dimensions(@Term.dimensions@, 0);
+
 	@}
 	| Expr '+' Term
 	@{
-		@check assert_dimensions(@Expr.dimensions@, 0);
-		@check assert_dimensions(@Term.dimensions@, 0);
 		@i @Term.vars@ = @Expr.1.vars@;
 		@i @Expr.1.vars@ = @Expr.0.vars@;
 		@i @Expr.0.dimensions@ = 0;
+
+		@assert assert_dimensions(@Expr.dimensions@, 0);
+		@assert assert_dimensions(@Term.dimensions@, 0);
 	@}
 	| Expr '*' Term
 	@{
-		@check assert_dimensions(@Expr.dimensions@, 0);
-		@check assert_dimensions(@Term.dimensions@, 0);
 		@i @Term.vars@ = @Expr.1.vars@;
 		@i @Expr.1.vars@ = @Expr.0.vars@;
 		@i @Expr.0.dimensions@ = 0;
+
+		@assert assert_dimensions(@Expr.dimensions@, 0);
+		@assert assert_dimensions(@Term.dimensions@, 0);
 	@}
 ;
 
@@ -226,12 +225,12 @@ Term: '(' Expr ')'
 	@{
 		@i @Term.1.vars@ = @Term.0.vars@;
 		@i @Expr.vars@ = @Term.0.vars@;
-		@i @Term.0.dimensions@ = @Term.1.dimensions@ - 1;
+		@i @Term.0.dimensions@ = @Term.1.dimensions@ - 1; printf("DECR @Lexpr.dimensions@\n");
 	@}
 	| T_ID 						/* Variablenverwendung */
 	@{
-		@check assert_variable_exists(@Term.vars@, @T_ID.name@);
-		@i @Term.dimensions@ = 0;
+		@i @Term.dimensions@ = symbol_table_get_dimensions(@Term.vars@, @T_ID.name@);
+		@assert assert_variable_exists(@Term.vars@, @T_ID.name@);
 	@}
 	| T_ID '(' ')' ':' Type	/* Funktionsaufruf */
 	@{

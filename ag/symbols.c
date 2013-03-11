@@ -20,8 +20,29 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 	return result;
 }
 
+symbol_table *symbol_table_new(void) {
+	symbol_table *result = malloc(sizeof(symbol_table));
+
+	if (result == NULL) {
+		fprintf(stderr, "Out of memory, malloc failed (tried to allocate %lu bytes)", sizeof(symbol_table));
+		exit(128);
+	}
+
+	result->next = NULL;
+	result->id = NULL;
+	result->dimensions = 0;
+
+	return result;
+}
+
 symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions dimensions, bool check) {
 	symbol_table *result = malloc(sizeof(symbol_table));
+
+	if (result == NULL) {
+		fprintf(stderr, "Out of memory, malloc failed (tried to allocate %lu bytes)", sizeof(symbol_table));
+		exit(128);
+	}
+
 	result->next = NULL;
 	result->id = strdup(id);
 	result->dimensions = dimensions;
@@ -62,7 +83,7 @@ symbol_table *symbol_table_get(symbol_table *table, char *id) {
 
 symbol_dimensions symbol_table_get_dimensions(symbol_table *table, char *id) {
 	if (table == NULL)
-		return NULL;
+		return 0;
 
 	symbol_table *i = table;
 
@@ -72,7 +93,7 @@ symbol_dimensions symbol_table_get_dimensions(symbol_table *table, char *id) {
 	} while ((i = i->next) != NULL);
 
 	fprintf(stderr, "get_dimensions: unknown symbol '%s'\n", id);
-	return NULL;
+	return 0;
 }
 
 symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
@@ -128,15 +149,15 @@ void symbol_table_print(symbol_table *table) {
 }
 
 void assert_array(symbol_dimensions dimensions) {
-	if (dimensions < 1) {
+	if (dimensions <= 0) {
 		fprintf(stderr, "trying to access int where array needed");
 		exit(3);
 	}
 }
 
 void assert_int(symbol_dimensions dimensions) {
-	if (dimensions < 1) {
-		fprintf(stderr, "trying to access array where int needed");
+	if (dimensions != 0) {
+		fprintf(stderr, "trying to access %d-dimensional array where int needed", dimensions);
 		exit(3);
 	}
 }
