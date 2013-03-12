@@ -5,6 +5,8 @@
 #include "symbols.h"
 #include "parser.h"
 
+#define DEBUG_SYMBOL_TABLE
+
 symbol_table *symbol_table_clone(symbol_table *table) {
 	if (table == NULL)
 		return NULL;
@@ -41,13 +43,6 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 		exit(128);
 	}
 
-	result->next = NULL;
-	result->id = strdup(id);
-	result->dimensions = dimensions;
-
-	if (table == NULL)
-		return result;
-
 	if (symbol_table_get(table, id) != NULL) {
 		if (check) {
 			fprintf(stderr, "Duplicate symbol '%s'.\n", id);
@@ -57,11 +52,11 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 		table = symbol_table_del(table, id);
 	}
 
-	symbol_table *i;
-	for (i = table; i->next != NULL; i = i->next);
-	i->next = result;
+	result->next = table;
+	result->id = strdup(id);
+	result->dimensions = dimensions;
 
-	return table;
+	return result;
 }
 
 symbol_table *symbol_table_get(symbol_table *table, char *id) {
@@ -174,6 +169,8 @@ void variable_exists(symbol_table *table, char *id) {
 		symbol_table_print(table);
 		exit(3);
 	}
+
+	printf("Identified '%s' as %p.\n", id, element);
 }
 
 void same_dimensions(symbol_dimensions a, symbol_dimensions b) {
@@ -181,4 +178,7 @@ void same_dimensions(symbol_dimensions a, symbol_dimensions b) {
 		fprintf(stderr, "Dimension mismatch (%d != %d).\n", a, b);
 		exit(3);
 	}
+#ifdef DEBUG_SYMBOL_TABLE
+	printf("Successfull dimension match (%d == %d).\n", a, b);
+#endif
 }
