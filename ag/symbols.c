@@ -11,26 +11,32 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 	if (table == NULL)
 		return NULL;
 
-	symbol_table *result = NULL, *i = table;
-
-	do {
-		result = symbol_table_add(result, i->id, i->dimensions, 0);
-	} while ((i = i->next) != NULL);
-
-	return result;
-}
-
-symbol_table *symbol_table_new(void) {
 	symbol_table *result = malloc(sizeof(symbol_table));
 
 	if (result == NULL) {
-		fprintf(stderr, "Out of memory, malloc failed (tried to allocate %lu bytes).", sizeof(symbol_table));
+		fprintf(stderr, "Out of memory initializing new table while cloning table %p, malloc failed (tried to allocate %lu bytes).", table, sizeof(symbol_table));
 		exit(128);
 	}
 
-	result->next = NULL;
-	result->id = NULL;
-	result->dimensions = 0;
+	symbol_table *i = result, *j = table;
+
+	while (j->next != NULL) {
+		i->next = malloc(sizeof(symbol_table));
+
+		if (i->next == NULL) {
+			fprintf(stderr, "Out of memory adding symbol '%s' while cloning table %p, malloc failed (tried to allocate %lu bytes).", j->id, table, sizeof(symbol_table));
+			exit(128);
+		}
+
+		i->id = strdup(j->id);
+		i->dimensions = j->dimensions;
+		i = i->next;
+		j = j->next;
+	}
+
+	i->id = strdup(j->id);
+	i->dimensions = j->dimensions;
+	i->next = NULL;
 
 	return result;
 }
@@ -39,17 +45,12 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 	symbol_table *result = malloc(sizeof(symbol_table));
 
 	if (result == NULL) {
-		fprintf(stderr, "Out of memory, malloc failed (tried to allocate %lu bytes).", sizeof(symbol_table));
+		fprintf(stderr, "Out of memory adding symbol '%s' to table %p, malloc failed (tried to allocate %lu bytes).", id, table, sizeof(symbol_table));
 		exit(128);
 	}
-
-	if (symbol_table_get(table, id) != NULL) {
-		if (check) {
-			fprintf(stderr, "Duplicate symbol '%s'.\n", id);
-			exit(3);
-		}
-
-		table = symbol_table_del(table, id);
+	else if (check && symbol_table_get(table, id) != NULL) {
+		fprintf(stderr, "Duplicate symbol '%s'.\n", id);
+		exit(3);
 	}
 
 	result->next = table;
@@ -96,38 +97,50 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 	if (b == NULL)
 		return symbol_table_clone(a);
 
-	symbol_table *result = symbol_table_clone(a), *i = b;
+	symbol_table *result = malloc(sizeof(symbol_table));
 
-	do {
-		result = symbol_table_add(result, i->id, i->dimensions, check);
-	} while ((i = i->next) != NULL);
+	if (result == NULL) {
+		fprintf(stderr, "Out of memory initializing new table in order to merge tables %p and %p, malloc failed (tried to allocate %lu bytes).", a, b, sizeof(symbol_table));
+		exit(128);
+	}
+
+	symbol_table *i = result, *j = b;
+
+	while (j->next != NULL) {
+		i->next = malloc(sizeof(symbol_table));
+
+		if (i->next == NULL) {
+			fprintf(stderr, "Out of memory adding symbol '%s' while merging tables %p and %p, malloc failed (tried to allocate %lu bytes).", j->id, a, b, sizeof(symbol_table));
+			exit(128);
+		}
+
+		i->id = strdup(j->id);
+		i->dimensions = j->dimensions;
+		i = i->next;
+		j = j->next;
+	}
+
+	j = a;
+
+	while (j->next != NULL) {
+		i->next = malloc(sizeof(symbol_table));
+
+		if (i->next == NULL) {
+			fprintf(stderr, "Out of memory adding symbol '%s' while merging tables %p and %p, malloc failed (tried to allocate %lu bytes).", j->id, a, b, sizeof(symbol_table));
+			exit(128);
+		}
+
+		i->id = strdup(j->id);
+		i->dimensions = j->dimensions;
+		i = i->next;
+		j = j->next;
+	}
+
+	i->id = strdup(j->id);
+	i->dimensions = j->dimensions;
+	i->next = NULL;
 
 	return result;
-}
-
-symbol_table *symbol_table_del(symbol_table *table, char *id) {
-	if (table == NULL)
-		return NULL;
-
-	symbol_table *i = table, *prev = NULL, *result;
-
-	do {
-		if (strcmp(i->id, id) == 0) {
-			if (prev == NULL) {
-				result = i->next;
-			}
-			else {
-				prev->next = i->next;
-				result = table;
-			}
-			free(i->id);
-			free(i);
-			return result;
-		}
-		prev = i;
-	} while ((i = i->next) != NULL);
-
-	return table;
 }
 
 void symbol_table_print(symbol_table *table) {
