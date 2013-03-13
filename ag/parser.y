@@ -14,9 +14,6 @@ int yylex(void);
 
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
 %start Program
-%debug
-%verbose
-%locations
 
 @attributes { int value; }						T_NUM
 @attributes { char *name; }						T_ID
@@ -285,10 +282,5 @@ int yyerror(const char *e) {
 }
 
 int main(int argc, char **argv) {
-	int i;
-	for (i = 1; i < argc; i++)
-		if (strcmp("-d", argv[i]) == 0 || strcmp("--debug", argv[i]) == 0)
-			yydebug = true;
-
 	return yyparse();
 }
