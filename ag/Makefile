@@ -14,4 +14,4 @@ parser.c: oxout.y
 	bison -d -o parser.c oxout.y
 
 clean:
-	rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o parser
+	rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o parser symbols.o
