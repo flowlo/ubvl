@@ -19,9 +19,9 @@ size_t asmb_ref(char *s, size_t n)
 int main(int argc, char** argv) {
 	size_t n = strlen(argv[1]);
 	size_t asmb_result = asmb(argv[1], n);
-	printf("asma:     %lu\n", asmb_result);
+	printf("asmb:     %lu\n", asmb_result);
 	size_t asmb_ref_result = asmb_ref(argv[1], n);
-	printf("asma_ref: %lu\n", asmb_ref_result);
+	printf("asmb_ref: %lu\n", asmb_ref_result);
 	printf(asmb_ref_result == asmb_result ? "ok\n" : "fail\n");
 	return 0;
 }
