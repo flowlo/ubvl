@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parser.h"
-#include "symbols.h"
+#include "symbol_table.h"
 
 extern int yylineno;
 %}

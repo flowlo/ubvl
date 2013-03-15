@@ -3,7 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include "symbols.h"
+#include "symbol_table.h"
 #define YYERROR_VERBOSE
 
 extern int yylineno;

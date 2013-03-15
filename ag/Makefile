@@ -1,5 +1,5 @@
-ag: parser.o scanner.o symbols.o
-	gcc -Wall -o ag scanner.o parser.o symbols.o -lfl
+ag: parser.o scanner.o symbol_table.o
+	gcc -Wall -o ag scanner.o parser.o symbol_table.o -lfl
 
 oxout.y oxout.l: parser.y scanner.l
 	ox parser.y scanner.l
@@ -14,4 +14,4 @@ parser.c: oxout.y
 	bison -d -o parser.c oxout.y
 
 clean:
-	rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o parser symbols.o
+	rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o parser symbol_table.o
