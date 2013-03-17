@@ -24,3 +24,12 @@ ast_node *node_new_call(char *name, ast_node *args) {
 ast_node *node_new_definition(char* name, ast_node *expr) {
 	return NULL;
 }
+
+void node_print(ast_node *node, int indent) {
+	if (node == NULL)
+		return;
+
+	printf("%*d", indent, node->op);
+	node_print(node->left, indent + 1);
+	node_print(node->right, indent + 1);
+}

@@ -48,5 +48,5 @@ ast_node *node_new_imm(long value);
 ast_node *node_new_id(char *name);
 ast_node *node_new_call(char *name, ast_node *args);
 ast_node *node_new_definition(char* name, ast_node *expr);
-
+void node_print(ast_node *node, int indent);
 #endif
