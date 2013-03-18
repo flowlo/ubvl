@@ -40,7 +40,7 @@ Program: Funcdef ';'
 Funcdef: T_ID '(' Pars ')' Stats T_END /* Funktionsdefinition */
 	@{
 		@i @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true);
-		@code funcdef(@T_ID.name@, @Pars.sym@, @Stats.node@);
+		@code node_print(@Stats.node@, 0); funcdef(@T_ID.name@, @Pars.sym@, @Stats.node@);
 	@}
 ;
 

@@ -1,29 +1,40 @@
 #ifndef TREE_H
 #define TREE_H
 #include <stdlib.h>
+#include <stdio.h>
 
 #ifndef CODE_BFE
 typedef struct burm_state *STATEPTR_TYPE;
 #endif
 
+#define FOREACH(CALLBACK) \
+	CALLBACK(O_NEQ) \
+	CALLBACK(O_LT) \
+	CALLBACK(O_ADD) \
+	CALLBACK(O_MUL) \
+	CALLBACK(O_SUB) \
+	CALLBACK(O_ID) \
+	CALLBACK(O_NUM) \
+	CALLBACK(O_RETURN) \
+	CALLBACK(O_ASSIGN) \
+	CALLBACK(O_IF) \
+	CALLBACK(O_WHILE) \
+	CALLBACK(O_STATS) \
+	CALLBACK(O_ELSE) \
+	CALLBACK(O_ARRAY) \
+	CALLBACK(O_OR) \
+	CALLBACK(O_NOT) \
+	CALLBACK(O_ARG)
+
+#define GENERATE_FIELD(FIELD) FIELD,
+#define GENERATE_STRING(STRING) #STRING,
+
 enum {
-	O_NEQ = 1,
-	O_LT,
-	O_ADD,
-	O_MUL,
-	O_SUB,
-	O_ID,
-	O_NUM,
-	O_RETURN,
-	O_ASSIGN,
-	O_IF,
-	O_WHILE,
-	O_STATS,
-	O_ELSE,
-	O_ARRAY,
-	O_OR,
-	O_NOT,
-	O_ARG
+	FOREACH(GENERATE_FIELD)
+};
+
+static const char *op_name[] = {
+	FOREACH(GENERATE_STRING)
 };
 
 typedef struct ast_node {
@@ -31,11 +42,16 @@ typedef struct ast_node {
 	struct ast_node *right;
 	int op;
 	long value;
+	char *description;
+	char *reg;
 	STATEPTR_TYPE label;
 } ast_node;
 
 typedef ast_node* ast_node_ptr;
 
+#define TREENULL		(struct ast_node *)NULL
+#define TREESIZE		(sizeof(struct ast_node))
+#define TREECAST		struct ast_node *
 #define NODEPTR_TYPE		ast_node_ptr
 #define OP_LABEL(node)		((node)->op)
 #define LEFT_CHILD(node)	((node)->left)
