@@ -13,9 +13,8 @@ int yyerror(const char*);
 
 %%
 
-Program: Funcdef ';'
-	| Program Program
-	|
+Program:
+	| Program Funcdef ';'
 ;
 
 Funcdef: T_ID '(' Pars ')' Stats T_END			/* Funktionsdefinition */
@@ -33,9 +32,8 @@ Type: T_INT
 	| T_ARRAY T_OF Type
 ;
 
-Stats: Stat ';'
+Stats:
 	| Stat ';' Stats
-	|
 ;
 
 Stat: T_RETURN Expr

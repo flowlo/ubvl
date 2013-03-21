@@ -28,9 +28,8 @@ int yylex(void);
 
 %%
 
-Program: Funcdef ';'
-	| Program Program
-	|
+Program:
+	| Program Funcdef ';'
 ;
 
 Funcdef: T_ID '(' Pars ')' Stats T_END /* Funktionsdefinition */
