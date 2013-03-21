@@ -1,0 +1,15 @@
+%{
+#ifndef CODE_BFE
+#define CODE_BFE
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include "ast.h"
+#include "glue.h"
+#endif
+%}
+
+%start stat
+%term O_NEQ=1 O_LT=2 O_ADD=3 O_MUL=4 O_SUB=5 O_ID=6 O_NUM=7 O_RETURN=8 O_ASSIGN=9 O_IF=10 O_WHILE=11 O_STATS=12
+
+%%

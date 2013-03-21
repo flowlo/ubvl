@@ -1,7 +1,11 @@
-#include <stdbool.h>
-
 #ifndef SYMBOLS_H
 #define SYMBOLS_H
+#include <stdbool.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include "parser.h"
 
 typedef int symbol_dimensions;
 

@@ -1,5 +1,5 @@
-ag: parser.o scanner.o symbols.o code.o tree.o
-	gcc -Wall -o ag scanner.o parser.o symbols.o code.o tree.o -lfl
+codea: parser.o scanner.o symbol_table.o code.o ast.o glue.o
+	gcc -Wall -o codea scanner.o parser.o symbol_table.o code.o ast.o glue.o -lfl
 
 oxout.y oxout.l: parser.y scanner.l
 	ox parser.y scanner.l
@@ -17,4 +17,4 @@ code.c: code.bfe
 	bfe < code.bfe | iburg > code.c
 
 clean:
-	rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o parser code.c code.o symbols.o tree.o
+	rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o parser code.c code.o symbol_table.o ast.o glue.o
