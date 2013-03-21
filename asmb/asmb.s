@@ -15,7 +15,7 @@ asmb:
 	shrq		$4, %rcx
 	jrcxz		last
 loop:
-	movdqu		(%rdi), %xmm9
+	movdqu		(%rdi), %xmm9		# scaling 16 would be nice
 	leaq		16 (%rdi), %rdi
 	pcmpeqb		%xmm8, %xmm9
 	pmovmskb	%xmm9, %r11
