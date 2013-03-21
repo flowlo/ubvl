@@ -25,6 +25,9 @@ asmb
 scanner
 parser
 ag
+codea
+codeb
+gesamt
 
 # flex output files
 scanner.c
@@ -32,6 +35,7 @@ scanner.c
 # bison output files
 parser.c
 parser.h
+parser.output
 
 # ox output files
 oxout.l
