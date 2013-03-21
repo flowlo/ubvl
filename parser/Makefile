@@ -6,11 +6,11 @@ parser: parser.o scanner.o
 %.o: %.c
 	gcc -Wall -c $*.c
 
-scanner.c: scanner.l parser.h
+scanner.c: scanner.l
 	flex -o scanner.c scanner.l
 
-%.c %.h: %.y
-	bison -d -o $*.c $*.y
+parser.c: parser.y
+	bison -v -d -o parser.c parser.y
 
 clean:
-	rm -f scanner.c scanner.o parser.h parser.c parser.o parser
+	rm -f scanner.c scanner.o parser.h parser.c parser.o parser parser.output

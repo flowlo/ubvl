@@ -11,10 +11,10 @@ scanner.c: oxout.l
 	gcc -Wall -c $*.c
 
 parser.c: oxout.y
-	bison -d -o parser.c oxout.y
+	bison -v -d -o parser.c oxout.y
 
 code.c: code.bfe
 	bfe < code.bfe | iburg > code.c
 
 clean:
-	rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o parser code.c code.o symbol_table.o ast.o glue.o
+	rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o parser code.c code.o symbol_table.o ast.o glue.o parser.output
