@@ -1,5 +1,26 @@
-#ifndef TREE_H
-#define TREE_H
+/*
+ * Operations:
+ *
+ * NEQ		left != right
+ * LT		left < right
+ * ADD		left + right
+ * MUL		left * right
+ * SUB		left - right
+ * ID		Refers to a defined variable. (name)
+ * NUM		Numeric constant.
+ * RETURN	Returns left.
+ * ASSIGN	left: variable, right: value
+ * IF		left: either O_STATS if there is no else clause, or O_ELSE, right: the condition (O_NEQ, O_LT)
+ * WHILE
+ * STATS
+ * ELSE
+ * ARRAY
+ * OR		left || right
+ * NOT		!left
+ */
+
+#ifndef AST_H
+#define AST_H
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,22 +30,22 @@ typedef struct burm_state *STATEPTR_TYPE;
 #endif
 
 #define FOREACH(CALLBACK) \
-	CALLBACK(O_NEQ) \		// left != right
-	CALLBACK(O_LT) \		// left < right
-	CALLBACK(O_ADD) \		// left + right
-	CALLBACK(O_MUL) \		// left * right
-	CALLBACK(O_SUB) \		// left - right
-	CALLBACK(O_ID) \		// Refers to a defined variable. (name)
-	CALLBACK(O_NUM) \		// Numeric constant.
+	CALLBACK(O_NEQ) \
+	CALLBACK(O_LT) \
+	CALLBACK(O_ADD) \
+	CALLBACK(O_MUL) \
+	CALLBACK(O_SUB) \
+	CALLBACK(O_ID) \
+	CALLBACK(O_NUM) \
 	CALLBACK(O_RETURN) \
-	CALLBACK(O_ASSIGN) \		// left: variable, right: value
-	CALLBACK(O_IF) \		// left: either O_STATS if there is no else clause, or O_ELSE, right: the condition (O_NEQ, O_LT)
+	CALLBACK(O_ASSIGN) \
+	CALLBACK(O_IF) \
 	CALLBACK(O_WHILE) \
 	CALLBACK(O_STATS) \
 	CALLBACK(O_ELSE) \
 	CALLBACK(O_ARRAY) \
-	CALLBACK(O_OR) \		// left | right
-	CALLBACK(O_NOT) \		// !left
+	CALLBACK(O_OR) \
+	CALLBACK(O_NOT) \
 	CALLBACK(O_ARG)
 
 #define GENERATE_FIELD(FIELD) FIELD,
@@ -43,7 +64,6 @@ typedef struct ast_node {
 	struct ast_node *right;
 	int op;
 	long value;
-//	char *description;
 	char *reg;
 	char *name;
 	STATEPTR_TYPE label;

@@ -10,6 +10,9 @@
 %}
 
 %start stat
-%term O_NEQ=1 O_LT=2 O_ADD=3 O_MUL=4 O_SUB=5 O_ID=6 O_NUM=7 O_RETURN=8 O_ASSIGN=9 O_IF=10 O_WHILE=11 O_STATS=12
+%term O_NEQ=0 O_LT=1 O_ADD=2 O_MUL=3 O_SUB=4 O_ID=5 O_NUM=6 O_RETURN=7 O_ASSIGN=8 O_IF=9 O_WHILE=10 O_STATS=11 O_ELSE=12 O_ARRAY=13 O_OR=14 O_NOT=15 O_ARG=16
 
 %%
+stat:	ret			# 0 # printf("stat -> ret?\n");
+ret:	O_RETURN(num)		# 1 # printf("\tmovq $%li, %%rax\n", bnode->left->value);
+num:	O_NUM			# 0 # printf("num -> O_NUM?\n");

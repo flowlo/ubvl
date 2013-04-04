@@ -41,7 +41,7 @@ Program: Program Funcdef ';'
 Funcdef: T_ID '(' Pars ')' Stats T_END /* Funktionsdefinition */
 	@{
 		@i @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true);
-		@code node_print(@Stats.node@, 0); funcdef(@T_ID.name@, @Pars.sym@, @Stats.node@);
+		@code node_print(@Stats.node@, 2); funcdef(@T_ID.name@, @Pars.sym@, @Stats.node@);
 	@}
 ;
 
@@ -94,7 +94,7 @@ Stat: T_RETURN Expr
 		@i @Expr.sym@ = @Stat.in@;
 		@i @Stat.node@ = node_new(O_RETURN, @Expr.node@, NULL);
 
-		@code burm_label(@Stat.node@); burm_reduce(@Stat.node@, 1);
+		@code @revorder(1) burm_label(@Stat.node@); /* burm_reduce(@Stat.node@, 1); */
 	@}
 	| T_IF Bool T_THEN Stats T_END
 	@{
@@ -103,7 +103,7 @@ Stat: T_RETURN Expr
 		@i @Stats.sym@ = @Stat.in@;
 		@i @Stat.node@ = node_new(O_IF, @Bool.node@, @Stats.node@);
 
-		@code @revorder(1) burm_label(@Stat.node@); burm_reduce(@Stat.node@, 1);
+		@code @revorder(1) burm_label(@Stat.node@); //burm_reduce(@Stat.node@, 1);
 	@}
 	| T_IF Bool T_THEN Stats T_ELSE Stats T_END
 	@{
@@ -128,7 +128,7 @@ Stat: T_RETURN Expr
 
 		@assert same_dimensions(@Vardef.dimensions@, @Expr.dimensions@);
 
-		@code @revorder(1) burm_label(@Stat.node@); burm_reduce(@Stat.node@, 1);
+		@code @revorder(1) burm_label(@Stat.node@); //burm_reduce(@Stat.node@, 1);
 	@}
 	| Lexpr T_ASSIGN Expr /* Zuweisung */
 	@{
@@ -139,7 +139,7 @@ Stat: T_RETURN Expr
 
 		@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 
-		@code @revorder(1) burm_label(@Stat.node@); burm_reduce(@Stat.node@, 1);
+		@code @revorder(1) burm_label(@Stat.node@); //burm_reduce(@Stat.node@, 1);
 	@}
 	| Term
 	@{
@@ -266,7 +266,7 @@ Term: '(' Expr ')'
 	| T_NUM
 	@{
 		@i @Term.dimensions@ = 0;
-		@i @Term.node@ = node_new_imm(@T_NUM.value@);
+		@i @Term.node@ = node_new_num(@T_NUM.value@);
 	@}
 	| Term '[' Expr ']' /* lesender Arrayzugriff */
 	@{
