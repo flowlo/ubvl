@@ -8,7 +8,7 @@ extern int yylineno;
 
 %%
 
---.*$ ;
+--.* ;
 [ \t] ;
 
 "\n" {
