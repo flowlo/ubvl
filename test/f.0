@@ -1,9 +1,0 @@
-main (argc : int, argv: array of int)
-	var a : int := 1;
-	a := 2;
-	var b : int := 2;
-	if a < b then
-		argc := b;
-		return $3;
-	end;
-end;

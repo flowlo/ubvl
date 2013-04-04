@@ -1,3 +1,0 @@
-main(a : array of array of int, b : array of int)
-	a[0] := b;
-end;

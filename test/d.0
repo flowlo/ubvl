@@ -1,3 +1,0 @@
-main (argc : int, argv : array of int)
-	argc := 1;
-end;

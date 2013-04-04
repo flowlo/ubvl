@@ -1,3 +1,0 @@
-main()
-	var a : int := 6 + 5;
-end;

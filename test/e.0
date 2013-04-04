@@ -1,8 +1,0 @@
-foo(bar : int)
-	var foo : int := 42;
-	bar := foo;
-	foo := bar;
-	while bar # foo do
-		foo := foo + $abc;
-	end;
-end;
