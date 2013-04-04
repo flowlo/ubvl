@@ -24,12 +24,16 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 		}
 
 		i->id = strdup(j->id);
+		if (j->reg != NULL)
+			i->reg = strdup(j->reg);
 		i->dimensions = j->dimensions;
 		i = i->next;
 		j = j->next;
 	}
 
 	i->id = strdup(j->id);
+	if (j->reg != NULL)
+		i->reg = strdup(j->reg);
 	i->dimensions = j->dimensions;
 	i->next = NULL;
 
@@ -50,6 +54,7 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 
 	result->next = table;
 	result->id = strdup(id);
+	result->reg = NULL;
 	result->dimensions = dimensions;
 
 	return result;
@@ -110,6 +115,8 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 		}
 
 		i->id = strdup(j->id);
+		if (j->reg != NULL)
+			i->reg = strdup(j->reg);
 		i->dimensions = j->dimensions;
 		i = i->next;
 		j = j->next;
@@ -126,12 +133,16 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 		}
 
 		i->id = strdup(j->id);
+		if (j->reg != NULL)
+			i->reg = strdup(j->reg);
 		i->dimensions = j->dimensions;
 		i = i->next;
 		j = j->next;
 	}
 
 	i->id = strdup(j->id);
+	if (j->reg != NULL)
+		i->reg = strdup(j->reg);
 	i->dimensions = j->dimensions;
 	i->next = NULL;
 
@@ -178,7 +189,7 @@ void variable_exists(symbol_table *table, char *id) {
 		exit(3);
 	}
 
-	printf("Identified '%s' as %p.\n", id, element);
+	printf("Identified '%s' as %p in register '%s'.\n", id, element, element->reg);
 }
 
 void same_dimensions(symbol_dimensions a, symbol_dimensions b) {

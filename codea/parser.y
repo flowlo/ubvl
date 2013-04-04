@@ -27,8 +27,8 @@ int yylex(void);
 @attributes { symbol_table *sym; symbol_dimensions dimensions; ast_node* node; }	Expr Term Lexpr
 
 @traversal @postorder run
-@traversal @postorder assert
-@traversal @postorder code
+@traversal @preorder assert
+@traversal @preorder code
 
 %%
 
@@ -36,12 +36,13 @@ Program: Program Funcdef ';'
 	|
 ;
 
-
-
 Funcdef: T_ID '(' Pars ')' Stats T_END /* Funktionsdefinition */
 	@{
-		@i @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true);
-		@code node_print(@Stats.node@, 2); funcdef(@T_ID.name@, @Pars.sym@, @Stats.node@);
+		@i @Stats.sym@ = symbol_table_merge_and_assign_regs(@Pars.sym@, @Stats.sym@, true);
+		@code funcdef(@T_ID.name@, @Pars.sym@, @Stats.node@);
+		#ifdef PRINT_AST
+		node_print(@Stats.node@, 2);
+		#endif
 	@}
 ;
 
@@ -94,7 +95,7 @@ Stat: T_RETURN Expr
 		@i @Expr.sym@ = @Stat.in@;
 		@i @Stat.node@ = node_new(O_RETURN, @Expr.node@, NULL);
 
-		@code @revorder(1) burm_label(@Stat.node@); /* burm_reduce(@Stat.node@, 1); */
+		@code burm_label(@Stat.node@); burm_reduce(@Stat.node@, 1);
 	@}
 	| T_IF Bool T_THEN Stats T_END
 	@{
@@ -103,7 +104,7 @@ Stat: T_RETURN Expr
 		@i @Stats.sym@ = @Stat.in@;
 		@i @Stat.node@ = node_new(O_IF, @Bool.node@, @Stats.node@);
 
-		@code @revorder(1) burm_label(@Stat.node@); //burm_reduce(@Stat.node@, 1);
+		@code @revorder(1) burm_label(@Stat.node@); burm_reduce(@Stat.node@, 1);
 	@}
 	| T_IF Bool T_THEN Stats T_ELSE Stats T_END
 	@{
@@ -128,7 +129,7 @@ Stat: T_RETURN Expr
 
 		@assert same_dimensions(@Vardef.dimensions@, @Expr.dimensions@);
 
-		@code @revorder(1) burm_label(@Stat.node@); //burm_reduce(@Stat.node@, 1);
+		@code @revorder(1) burm_label(@Stat.node@); burm_reduce(@Stat.node@, 1);
 	@}
 	| Lexpr T_ASSIGN Expr /* Zuweisung */
 	@{
@@ -139,7 +140,7 @@ Stat: T_RETURN Expr
 
 		@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 
-		@code @revorder(1) burm_label(@Stat.node@); //burm_reduce(@Stat.node@, 1);
+		@code @revorder(1) burm_label(@Stat.node@); burm_reduce(@Stat.node@, 1);
 	@}
 	| Term
 	@{
@@ -195,7 +196,7 @@ Bterm: '(' Bool ')'
 Lexpr: T_ID /* schreibender Variablenzugriff */
 	@{
 		@i @Lexpr.dimensions@ = -128;
-		@i @Lexpr.node@ = node_new_id(@T_ID.name@);
+		@i @Lexpr.node@ = node_new_id(@T_ID.name@, @Lexpr.sym@);
 		@run @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.sym@, @T_ID.name@);
 
 		@assert variable_exists(@Lexpr.sym@, @T_ID.name@);
@@ -280,7 +281,7 @@ Term: '(' Expr ')'
 	| T_ID /* Variablenverwendung */
 	@{
 		@i @Term.dimensions@ = -128;
-		@i @Term.node@ = node_new_id(@T_ID.name@);
+		@i @Term.node@ = node_new_id(@T_ID.name@, @Term.sym@);
 
 		@run @Term.dimensions@ = symbol_table_get_dimensions(@Term.sym@, @T_ID.name@);
 

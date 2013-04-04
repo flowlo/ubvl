@@ -24,7 +24,7 @@ int yylex(void);
 @attributes { symbol_table *sym; symbol_dimensions dimensions; }	Expr Term Lexpr
 
 @traversal @postorder run
-@traversal @postorder assert
+@traversal @preorder assert
 
 %%
 

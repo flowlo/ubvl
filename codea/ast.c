@@ -19,12 +19,15 @@ ast_node *node_new_num(long value) {
 	return result;
 }
 
-ast_node *node_new_id(char *name) {
+ast_node *node_new_id(char *name, symbol_table *table) {
 	ast_node *result = malloc(sizeof(ast_node));
 	result->op = O_ID;
 	result->left = NULL;
 	result->right = NULL;
 	result->name = strdup(name);
+	table = symbol_table_get(table, name);
+	result->reg = table->reg;
+	fprintf(stderr, "Register lookup for \"%s\" resulted in \"%s\".\n", table->id, result->reg);
 
 	return result;
 }

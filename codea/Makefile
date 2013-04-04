@@ -8,7 +8,7 @@ scanner.c: oxout.l
 	flex -o scanner.c oxout.l
 
 %.o: %.c
-	gcc -Wall -c $*.c
+	gcc -Wall -c -g $*.c
 
 parser.c: oxout.y
 	bison -v -d -o parser.c oxout.y
