@@ -14,7 +14,7 @@ extern int yylineno;
 
 %%
 
---.*$				;
+--.*				;
 [ \t]				;
 "\n"				yylineno++;
 "end"				return T_END;

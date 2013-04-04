@@ -8,12 +8,10 @@ extern int yylineno;
 
 %%
 
---.* ;
-[ \t] ;
-
-"\n" {
-	yylineno++;
-}
+--.*		;
+[ \t]		;
+"\n"		yylineno++;
+[0-9]+		printf("num %x\n", atoi(yytext));
 
 (end|array|of|int|return|if|then|else|while|do|var|not|or|;|\(|\)|,|:|:=|<|#|\[|\]|-|\+|\*) {
 	printf("%s\n", yytext);
@@ -21,10 +19,6 @@ extern int yylineno;
 
 [a-zA-Z][a-zA-Z0-9]* {
 	printf("id %s\n", yytext);
-}
-
-[0-9]+ {
-	printf("num %x\n", atoi(yytext));
 }
 
 \$[0-9a-fA-F]+ {

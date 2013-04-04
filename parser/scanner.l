@@ -10,7 +10,7 @@ extern int yylineno;
 
 %%
 
---.*$				;
+--.*				;
 [ \t]				;
 "\n"				yylineno++;
 
