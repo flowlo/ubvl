@@ -8,7 +8,7 @@ fi
 
 echo 'Invoking abgabe.sh ...'
 
-./abgabe.sh $tasks
+$(dirname $(realpath $0))/abgabe.sh $tasks
 
 for item in $tasks ; do
 	/usr/ftp/pub/ubvl/test13/$item/test
