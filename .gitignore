@@ -21,13 +21,13 @@
 
 # Specific binaries
 asma
-asmb
-scanner
-parser
-ag
-codea
-codeb
-gesamt
+*/asmb
+*/scanner
+*/parser
+*/ag
+*/codea
+*/codeb
+*/gesamt
 
 # flex output files
 scanner.c
