@@ -26,9 +26,9 @@ last:
 	andq		$15, %rsi
 	jz		ret
 	xorq		$63, %rsi
-	leaq		1 (%rsi), %rcx
 	movdqu		(%rdi), %xmm9
 	pcmpeqb		%xmm8, %xmm9
+	leaq		1 (%rsi), %rcx
 	pmovmskb	%xmm9, %r11
 	shlq		%cl, %r11
 	popcnt		%r11, %r11

@@ -1,5 +1,5 @@
 asmb.o: asmb.s
-	gcc -c asmb.s
+	@gcc -c asmb.s
 
 clean:
-	rm -f asmb.o
+	@rm -f asmb.o
