@@ -70,20 +70,13 @@ symbol_table *symbol_table_get(symbol_table *table, char *id) {
 }
 
 symbol_dimensions symbol_table_get_dimensions(symbol_table *table, char *id) {
-	if (table == NULL)
-		return 0;
-
-	symbol_table *i = table;
-
-	do {
-		if (strcmp(i->id, id) == 0)
-			return i->dimensions;
-	} while ((i = i->next) != NULL);
-
-	fprintf(stderr, "Unknown symbol '%s'.\n", id);
-	symbol_table_print(table);
-	exit(3);
-	return -128;
+	table = symbol_table_get(table, id);
+	if (table == NULL) {
+		fprintf(stderr, "Unknown symbol '%s'.\n", id);
+		symbol_table_print(table);
+		exit(3);
+	}
+	return table->dimensions;
 }
 
 symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
