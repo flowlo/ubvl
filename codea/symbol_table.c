@@ -1,10 +1,18 @@
-#include "symbol_table.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
-#define DEBUG_SYMBOL_TABLE
+#include "symbol_table.h"
+#include "glue.h"
 
 symbol_table *symbol_table_clone(symbol_table *table) {
 	if (table == NULL)
 		return NULL;
+
+	#ifdef DEBUG
+	printf("Cloning table:\n");
+	symbol_table_print(table);
+	#endif
 
 	symbol_table *result = malloc(sizeof(symbol_table));
 
@@ -41,6 +49,10 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 }
 
 symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions dimensions, bool check) {
+	return symbol_table_add_with_reg(table, id, dimensions, check, NULL);
+}
+
+symbol_table *symbol_table_add_with_reg(symbol_table *table, char *id, symbol_dimensions dimensions, bool check, char *reg) {
 	symbol_table *result = malloc(sizeof(symbol_table));
 
 	if (result == NULL) {
@@ -52,12 +64,26 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 		exit(3);
 	}
 
+	#ifdef DEBUG
+	printf("Added symbol '%s' with register '%s'.\n", id, reg);
+	print_var_usage();
+	#endif
+
 	result->next = table;
 	result->id = strdup(id);
-	result->reg = NULL;
+	if (reg != NULL)
+		result->reg = strdup(reg);
 	result->dimensions = dimensions;
 
 	return result;
+}
+
+symbol_table *symbol_table_add_var(symbol_table *table, char *id, symbol_dimensions dimensions, bool check) {
+	return symbol_table_add_with_reg(table, id, dimensions, check, reg_new_var());
+}
+
+symbol_table *symbol_table_add_par(symbol_table *table, char *id, symbol_dimensions dimensions, bool check) {
+	return symbol_table_add_with_reg(table, id, dimensions, check, reg_new_par());
 }
 
 symbol_table *symbol_table_get(symbol_table *table, char *id) {
@@ -75,20 +101,13 @@ symbol_table *symbol_table_get(symbol_table *table, char *id) {
 }
 
 symbol_dimensions symbol_table_get_dimensions(symbol_table *table, char *id) {
-	if (table == NULL)
-		return 0;
-
-	symbol_table *i = table;
-
-	do {
-		if (strcmp(i->id, id) == 0)
-			return i->dimensions;
-	} while ((i = i->next) != NULL);
-
-	fprintf(stderr, "Unknown symbol '%s'.\n", id);
-	symbol_table_print(table);
-	exit(3);
-	return -128;
+	table = symbol_table_get(table, id);
+	if (table == NULL) {
+		fprintf(stderr, "Unknown symbol '%s'.\n", id);
+		symbol_table_print(table);
+		exit(3);
+	}
+	return table->dimensions;
 }
 
 symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
@@ -197,7 +216,7 @@ void same_dimensions(symbol_dimensions a, symbol_dimensions b) {
 		fprintf(stderr, "Dimension mismatch (%d != %d).\n", a, b);
 		exit(3);
 	}
-#ifdef DEBUG_SYMBOL_TABLE
+#ifdef DEBUG
 	printf("Successfull dimension match (%d == %d).\n", a, b);
 #endif
 }
