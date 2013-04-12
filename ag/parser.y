@@ -17,6 +17,8 @@ int yyerror(const char*);
 int yylex(void);
 %}
 
+%left  '+'  '-'
+%left  '*'
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
 %start Program
 
@@ -32,7 +34,7 @@ int yylex(void);
 @traversal @preorder assert
 
 @macro arithmetic()
-	@i @Expr.0.dimensions@ = @Expr.dimensions@ + @Term.dimensions@;
+	@i @Expr.0.dimensions@ = @Expr.1.dimensions@ + @Term.dimensions@;
 	@assert is_integer(@Expr.dimensions@); is_integer(@Term.dimensions@);
 @end
 
@@ -40,54 +42,74 @@ int yylex(void);
 	@assert is_integer(@Expr.0.dimensions@); is_integer(@Expr.1.dimensions@);
 @end
 %%
+Vardef	:	T_ID ':' Type
+	;
+Args	:	Expr
+	| 	Args ',' Expr
+	|
+	;
+Bool	:	Bterm
+	|	Bool T_OR Bterm
+	;
+Program	:	Program Funcdef ';'
+	|
+	;
+Bterm	:	'(' Bool ')'
+	|	T_NOT Bterm
+	|	Expr '#' Expr @{ boolean() @}
+	|	Expr '<' Expr @{ boolean() @}
+	;
+Expr	:	Term
+	|	Expr '-' Term @{ arithmetic() @}
+	|	Expr '+' Term @{ arithmetic() @}
+	|	Expr '*' Term @{ arithmetic() @}
+	;
 
-Vardef: T_ID ':' Type ;
-Args:	Expr | Args ',' Expr | ;
-Bool:	Bterm | Bool T_OR Bterm ;
-Program:Program Funcdef ';' | ;
-Bterm: '(' Bool ')' | T_NOT Bterm | Expr '#' Expr @{ boolean() @} | Expr '<' Expr @{ boolean() @} ;
-Expr:	Term | Expr '-' Term @{ arithmetic() @} | Expr '+' Term @{ arithmetic() @} | Expr '*' Term @{ arithmetic() @} ;
-
-Stat:	T_RETURN Expr					@{ @i @Stat.out@ = @Stat.sym@; @}
-|	T_IF Bool T_THEN Stats T_END			@{ @i @Stat.out@ = @Stat.sym@; @}
-|	T_IF Bool T_THEN Stats T_ELSE Stats T_END	@{ @i @Stat.out@ = @Stat.sym@; @}
-|	T_WHILE Bool T_DO Stats T_END			@{ @i @Stat.out@ = @Stat.sym@; @}
-|	Term						@{ @i @Stat.out@ = @Stat.sym@; @}
-|	T_VAR Vardef T_ASSIGN Expr
+Stat	:	T_RETURN Expr					@{ @i @Stat.out@ = @Stat.sym@; @}
+	|	T_IF Bool T_THEN Stats T_END			@{ @i @Stat.out@ = @Stat.sym@; @}
+	|	T_IF Bool T_THEN Stats T_ELSE Stats T_END	@{ @i @Stat.out@ = @Stat.sym@; @}
+	|	T_WHILE Bool T_DO Stats T_END			@{ @i @Stat.out@ = @Stat.sym@; @}
+	|	Term						@{ @i @Stat.out@ = @Stat.sym@; @}
+	|	T_VAR Vardef T_ASSIGN Expr
 @{
 	@i @Stat.out@ = symbol_table_add(symbol_table_clone(@Stat.sym@), @Vardef.value@, @Vardef.dimensions@, false);
 	@assert same_dimensions(@Vardef.dimensions@, @Expr.dimensions@);
 @}
-|	Lexpr T_ASSIGN Expr
+	|	Lexpr T_ASSIGN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
-@} ;
+@}
+	;
 
-Funcdef:T_ID '(' Pars ')' Stats T_END			@{ @i @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); @};
+Funcdef	:	T_ID '(' Pars ')' Stats T_END			@{ @e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); @}
+	;
 
-Type:	T_INT						@{ @i @Type.dimensions@ = 0; @}
-|	T_ARRAY T_OF Type				@{ @i @Type.0.dimensions@ = @Type.1.dimensions@ + 1; @} ;
+Type	:	T_INT						@{ @i @Type.dimensions@ = 0; @}
+	|	T_ARRAY T_OF Type				@{ @i @Type.0.dimensions@ = @Type.1.dimensions@ + 1; @} ;
 
-Stats:	Stat ';' Stats					@{ @i @Stats.1.sym@ = @Stat.out@; @}
-|	;
+Stats	:	Stat ';' Stats					@{ @i @Stats.1.sym@ = @Stat.out@; @}
+	|
+	;
 
-Pars:	Vardef 						@{ @i @Pars.sym@ = symbol_table_add(NULL, @Vardef.value@, @Vardef.dimensions@, true); @}
-|	Pars ',' Vardef					@{ @i @Pars.0.sym@ = symbol_table_add(@Pars.1.sym@, @Vardef.value@, @Vardef.dimensions@, true); @}
-|							@{ @i @Pars.sym@ = NULL; @} ;
+Pars	:	Vardef 						@{ @i @Pars.sym@ = symbol_table_add(NULL, @Vardef.value@, @Vardef.dimensions@, true); @}
+	|	Pars ',' Vardef					@{ @i @Pars.0.sym@ = symbol_table_add(@Pars.1.sym@, @Vardef.value@, @Vardef.dimensions@, true); @}
+	|							@{ @i @Pars.sym@ = NULL; @}
+	;
 
-Lexpr:	T_ID						@{ @i @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.sym@, @T_ID.value@);  @}
-|	Term '[' Expr ']'
+Lexpr	:	T_ID						@{ @i @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.sym@, @T_ID.value@);  @}
+	|	Term '[' Expr ']'
 @{
 	@i @Lexpr.dimensions@ = @Term.dimensions@ - 1;
 	@assert is_array(@Term.dimensions@); is_integer(@Expr.dimensions@);
-@} ;
+@}
+	;
 
-Term:	'(' Expr ')' | T_ID '(' Args ')' ':' Type
-|	T_NUM						@{ @i @Term.dimensions@ = 0; @}
-|	Term '[' Expr ']' 				@{ @i @Term.0.dimensions@ = @Term.1.dimensions@ - 1; @}
-|	T_ID						@{ @i @Term.dimensions@ = symbol_table_get_dimensions(@Term.sym@, @T_ID.value@);  @} ;
-
+Term	:	'(' Expr ')' | T_ID '(' Args ')' ':' Type
+	|	T_NUM						@{ @i @Term.dimensions@ = 0; @}
+	|	Term '[' Expr ']' 				@{ @i @Term.0.dimensions@ = @Term.1.dimensions@ - 1; @}
+	|	T_ID						@{ @i @Term.dimensions@ = symbol_table_get_dimensions(@Term.sym@, @T_ID.value@);  @}
+	;
 %%
 
 int yyerror(const char *e) {

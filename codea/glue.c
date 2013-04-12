@@ -1,17 +1,32 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
 #include "glue.h"
 
 char vars[9][4]= { "rax", "r10", "r11", "r9", "r8", "rcx", "rdx", "rsi", "rdi" };
 char pars[6][4]= { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
-int usage[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static int var_usage[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+int par_usage[6] = { 0, 0, 0, 0, 0, 0 };
 
-#define reg_reset() memset(usage, 0, sizeof(int) * 9);
+void print_var_usage() {
+	int i;
+	for (i = 0; i < 9; i++)
+		printf("%s: %d  ", vars[i], var_usage[i]);
+	
+	printf("\n");
+}
+
+void reg_reset_all() {
+reg_reset();
+}
 
 void funcdef(char *name, symbol_table *table, ast_node *node) {
 	printf(".globl %1$s\n.type %1$s, @function\n%1$s:\n", name);
 
-	symbol_table_print(table);
+//	symbol_table_print(table);
 
-	reg_reset();
+//	reg_reset(); TODO ?!?!
 
 	int i;
 	symbol_table *element;
@@ -27,7 +42,7 @@ char *binary(char *op, char *first, char *second, bool commutative) {
 	char *reg;
 
 	if (first_is_par && second_is_par) {
-		reg = reg_new();
+		reg = reg_new_var();
 		printi("movq %%%s, %%%s", first, reg);
 		printi("%s %%%s, %%%s", op, second, reg);
 	} else if (!first_is_par && !second_is_par) {
@@ -48,13 +63,27 @@ char *binary(char *op, char *first, char *second, bool commutative) {
 	return reg;
 }
 
-char *reg_new(void) {
+char *reg_new_var(void) {
 	int i = 0;
 	for (i = 0; i < 9; i++)
-		if (usage[i] == 0)
+		if (var_usage[i] == 0) {
+			var_usage[i]++;
 			return strdup(vars[i]);
+		}
 
-	fprintf(stderr, "Not enough registers!");
+	fprintf(stderr, "Not enough variable registers!");
+	exit(4);
+}
+
+char *reg_new_par(void) {
+	int i = 0;
+	for (i = 0; i < 9; i++)
+		if (par_usage[i] == 0) {
+			par_usage[i]++;
+			return strdup(pars[i]);
+		}
+
+	fprintf(stderr, "Not enough parameter registers!");
 	exit(4);
 }
 
@@ -67,7 +96,7 @@ void reg_free(char *reg) {
 	int i;
 	for (i = 0; i < 9; i++) {
 		if (strcmp(reg, vars[i]) == 0) {
-			usage[i]--;
+			var_usage[i]--;
 			return;
 		}
 	}
@@ -99,81 +128,4 @@ bool is_par(char *reg) {
 		if (strcmp(reg, pars[i]) == 0)
 			return true;
 	return false;
-}
-
-symbol_table *symbol_table_merge_and_assign_regs(symbol_table *a, symbol_table *b, bool check) {
-	symbol_table *result = malloc(sizeof(symbol_table));
-
-	if (result == NULL) {
-		fprintf(stderr, "Out of memory initializing new table in order to merge tables %p and %p, malloc failed (tried to allocate %lu bytes).", a, b, sizeof(symbol_table));
-		exit(128);
-	}
-
-	int par = 0, var = 0;
-	symbol_table *i = result, *j = b;
-
-	if (j != NULL) {
-		while ((j = j->next) != NULL)
-			var++;
-
-		j = b;
-
-		while (j->next != NULL) {
-			i->next = malloc(sizeof(symbol_table));
-
-			if (i->next == NULL) {
-				fprintf(stderr, "Out of memory adding symbol '%s' while merging tables %p and %p, malloc failed (tried to allocate %lu bytes).", j->id, a, b, sizeof(symbol_table));
-				exit(128);
-			}
-
-			i->id = strdup(j->id);
-
-			if (var <= 0) {
-				fprintf(stderr, "Out of variable registers while merging.");
-			} else {
-				i->reg = strdup(vars[--var]);
-				printf("Assigned variable register %s to %s.\n", i->reg, i->id);
-			}
-			i->dimensions = j->dimensions;
-			i = i->next;
-			j = j->next;
-		}
-	}
-
-	j = a;
-
-	if (j != NULL) {
-		while ((j = j->next) != NULL)
-			par++;
-
-		j = a;
-
-		while (j->next != NULL) {
-			i->next = malloc(sizeof(symbol_table));
-
-			if (i->next == NULL) {
-				fprintf(stderr, "Out of memory adding symbol '%s' while merging tables %p and %p, malloc failed (tried to allocate %lu bytes).", j->id, a, b, sizeof(symbol_table));
-				exit(128);
-			}
-
-			i->id = strdup(j->id);
-
-			if (par <= 0) {
-				fprintf(stderr, "Out of parameter registers while merging.");
-			} else {
-				i->reg = strdup(pars[--par]);
-				printf("Assigned parameter register %s to %s.\n", i->reg, i->id);
-			}
-			i->dimensions = j->dimensions;
-			i = i->next;
-			j = j->next;
-		}
-		i->id = strdup(j->id);
-		if (j->reg != NULL)
-			i->reg = strdup(j->reg);
-		i->dimensions = j->dimensions;
-		i->next = NULL;
-	}
-
-	return result;
 }

@@ -21,9 +21,6 @@
 
 #ifndef AST_H
 #define AST_H
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "symbol_table.h"
 
 #ifndef CODE_BFE
@@ -47,18 +44,19 @@ typedef struct burm_state *STATEPTR_TYPE;
 	CALLBACK(O_ARRAY) \
 	CALLBACK(O_OR) \
 	CALLBACK(O_NOT) \
-	CALLBACK(O_ARG)
+	CALLBACK(O_ARG) \
+	CALLBACK(O_VARDEF)
 
 #define GENERATE_FIELD(FIELD) FIELD,
 #define GENERATE_STRING(STRING) #STRING,
 
+/* To define all numeric constants. */
 enum {
 	FOREACH(GENERATE_FIELD)
 };
 
-static const char *op_name[] = {
-	FOREACH(GENERATE_STRING)
-};
+/* To translate a number into a string in the form O_* */
+extern const char *op_name[];
 
 typedef struct ast_node {
 	struct ast_node *left;
@@ -86,6 +84,7 @@ ast_node *node_new(int op, ast_node *left, ast_node *right);
 ast_node *node_new_num(long value);
 ast_node *node_new_id(char *name, symbol_table *table);
 ast_node *node_new_call(char *name, ast_node *args);
-ast_node *node_new_definition(char* name, ast_node *expr);
+ast_node *node_new_definition(char *name, symbol_table *table, ast_node *value);
+ast_node *node_new_else(ast_node *first, ast_node *second, ast_node *condition);
 void node_print(ast_node *node, int indent);
 #endif
