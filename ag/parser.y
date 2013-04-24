@@ -29,13 +29,18 @@ int yylex(void);
 @attributes { @autoinh symbol_table *sym; symbol_table *out; }				Stat
 @attributes { symbol_dimensions dimensions; }						Type
 @attributes { @autosyn char* value; @autosyn symbol_dimensions dimensions; }		Vardef
-@attributes { @autoinh symbol_table *sym; @autosyn symbol_dimensions dimensions; }	Expr Term Lexpr
+@attributes { @autoinh symbol_table *sym; @autosyn symbol_dimensions dimensions; }	Expr Term Lexpr Add Sub Mul
 
 @traversal @preorder assert
 
-@macro arithmetic()
-	@i @Expr.0.dimensions@ = @Expr.1.dimensions@ + @Term.dimensions@;
-	@assert is_integer(@Expr.dimensions@); is_integer(@Term.dimensions@);
+@macro arithmetic(op,)
+	@i @op.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	@assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
+@end
+
+@macro arithmeticRecursive(op,)
+	@i @op.0.dimensions@ = @op.1.dimensions@ + @Term.dimensions@;
+	@assert is_integer(@op.1.dimensions@); is_integer(@Term.dimensions@);
 @end
 
 @macro boolean()
@@ -45,7 +50,7 @@ int yylex(void);
 Vardef	:	T_ID ':' Type
 	;
 Args	:	Expr
-	| 	Args ',' Expr
+	|	Args ',' Expr
 	|
 	;
 Bool	:	Bterm
@@ -59,10 +64,23 @@ Bterm	:	'(' Bool ')'
 	|	Expr '#' Expr @{ boolean() @}
 	|	Expr '<' Expr @{ boolean() @}
 	;
+
 Expr	:	Term
-	|	Expr '-' Term @{ arithmetic() @}
-	|	Expr '+' Term @{ arithmetic() @}
-	|	Expr '*' Term @{ arithmetic() @}
+	|	Add
+	|	Sub
+	|	Mul
+	;
+
+Add	:	Term '+' Term					@{ arithmetic(Add,) @}
+	|	Add '+' Term					@{ arithmeticRecursive(Add,) @}
+	;
+
+Sub	:	Term '-' Term					@{ arithmetic(Sub,) @}
+	|	Sub '-' Term					@{ arithmeticRecursive(Sub,) @}
+	;
+
+Mul	:	Term '*' Term					@{ arithmetic(Mul,) @}
+	|	Mul '*'	Term					@{ arithmeticRecursive(Mul,) @}
 	;
 
 Stat	:	T_RETURN Expr					@{ @i @Stat.out@ = @Stat.sym@; @}
