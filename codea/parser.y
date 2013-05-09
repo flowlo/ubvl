@@ -61,7 +61,6 @@ Vardef	:	T_ID ':' Type
 	;
 Args	:	Expr 						@{ @i @Args.node@ = node_new(O_ARG, @Expr.node@, NULL); @}
 	|	Args ',' Expr					@{ @i @Args.0.node@ = node_new(O_ARG, @Expr.node@, @Args.1.node@); @}
-	| 							@{ @i @Args.node@ = NULL; @}
 	;
 Bool	:	Bterm
 	|	Bool T_OR Bterm 				@{ @i @Bool.0.node@ = node_new(O_OR, @Bool.1.node@, @Bterm.node@); @}
@@ -140,6 +139,13 @@ Funcdef	:	T_ID '(' Pars ')' Stats T_END
 	@code reg_reset_all(); //node_print(@Stats.node@, 2);
 	funcdef(@T_ID.value@, @Pars.sym@, @Stats.node@);
 @}
+	|	T_ID '(' ')' Stats T_END
+@{
+	@i @Stats.sym@ = NULL;
+
+	@code reg_reset_all(); //node_print(@Stats.node@, 2);
+	funcdef(@T_ID.value@, NULL, @Stats.node@);
+@}
 	;
 Type	:	T_INT						@{ @i @Type.dimensions@ = 0; @}
 	|	T_ARRAY T_OF Type				@{ @i @Type.0.dimensions@ = @Type.1.dimensions@ + 1; @}
@@ -157,7 +163,6 @@ Stats	:	Stat ';' Stats
 	;
 Pars	:	Vardef 						@{ @i @Pars.sym@ = symbol_table_add_par(NULL, @Vardef.value@, @Vardef.dimensions@, true); @}
 	|	Pars ',' Vardef					@{ @i @Pars.0.sym@ = symbol_table_add_par(@Pars.1.sym@, @Vardef.value@, @Vardef.dimensions@, true); @}
-	|							@{ @i @Pars.sym@ = NULL; @}
 	;
 
 Lexpr	:	T_ID
@@ -172,7 +177,9 @@ Lexpr	:	T_ID
 	@assert is_array(@Term.dimensions@); is_integer(@Expr.dimensions@);
 @}
 	;
-Term	:	'(' Expr ')' | T_ID '(' Args ')' ':' Type	@{ @i @Term.node@ = node_new_call(@T_ID.value@, @Args.node@); @}
+Term	:	'(' Expr ')'
+	|	T_ID '(' Args ')' ':' Type			@{ @i @Term.node@ = node_new_call(@T_ID.value@, @Args.node@); @}
+	|	T_ID '(' ')' ':' Type				@{ @i @Term.node@ = node_new_call(@T_ID.value@, NULL); @}
 	|	T_NUM						@{ @i @Term.dimensions@ = 0; @i @Term.node@ = node_new_num(@T_NUM.value@); @}
 	|	Term '[' Expr ']'
 @{

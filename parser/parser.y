@@ -17,10 +17,10 @@ Program	:	Program Funcdef ';'
 	|
 	;
 Funcdef	:	T_ID '(' Pars ')' Stats T_END		/* Funktionsdefinition */
+	|	T_ID '(' ')' Stats T_END		/* Funktionsdefinition */
 	;
 Pars	:	Vardef					/* Parameterdefinition */
 	|	Pars ',' Vardef
-	|
 	;
 Vardef	:	T_ID ':' Type
 	;

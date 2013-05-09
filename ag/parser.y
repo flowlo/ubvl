@@ -51,7 +51,6 @@ Vardef	:	T_ID ':' Type
 	;
 Args	:	Expr
 	|	Args ',' Expr
-	|
 	;
 Bool	:	Bterm
 	|	Bool T_OR Bterm
@@ -101,6 +100,7 @@ Stat	:	T_RETURN Expr					@{ @i @Stat.out@ = @Stat.sym@; @}
 	;
 
 Funcdef	:	T_ID '(' Pars ')' Stats T_END			@{ @e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); @}
+	|	T_ID '(' ')' Stats T_END			@{ @i @Stats.sym@ = NULL; @}
 	;
 
 Type	:	T_INT						@{ @i @Type.dimensions@ = 0; @}
@@ -112,7 +112,6 @@ Stats	:	Stat ';' Stats					@{ @i @Stats.1.sym@ = @Stat.out@; @}
 
 Pars	:	Vardef 						@{ @i @Pars.sym@ = symbol_table_add(NULL, @Vardef.value@, @Vardef.dimensions@, true); @}
 	|	Pars ',' Vardef					@{ @i @Pars.0.sym@ = symbol_table_add(@Pars.1.sym@, @Vardef.value@, @Vardef.dimensions@, true); @}
-	|							@{ @i @Pars.sym@ = NULL; @}
 	;
 
 Lexpr	:	T_ID						@{ @i @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.sym@, @T_ID.value@);  @}
@@ -123,9 +122,15 @@ Lexpr	:	T_ID						@{ @i @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.
 @}
 	;
 
-Term	:	'(' Expr ')' | T_ID '(' Args ')' ':' Type
+Term	:	'(' Expr ')'
+	|	T_ID '(' Args ')' ':' Type
+	|	T_ID '(' ')' ':' Type
 	|	T_NUM						@{ @i @Term.dimensions@ = 0; @}
-	|	Term '[' Expr ']' 				@{ @i @Term.0.dimensions@ = @Term.1.dimensions@ - 1; @}
+	|	Term '[' Expr ']'
+@{
+	@i @Term.0.dimensions@ = @Term.1.dimensions@ - 1;
+	@assert is_array(@Term.1.dimensions@); is_integer(@Expr.dimensions@);
+@}
 	|	T_ID						@{ @i @Term.dimensions@ = symbol_table_get_dimensions(@Term.sym@, @T_ID.value@);  @}
 	;
 %%
