@@ -56,15 +56,14 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 }
 
 symbol_table *symbol_table_get(symbol_table *table, char *id) {
-	if (table == NULL)
-		return NULL;
-
 	symbol_table *i = table;
 
-	do {
+	while (i != NULL) {
 		if (strcmp(i->id, id) == 0)
 			return i;
-	} while ((i = i->next) != NULL);
+
+		i = i->next;
+	}
 
 	return NULL;
 }
