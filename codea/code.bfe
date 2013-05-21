@@ -33,6 +33,11 @@ expr:	O_ID			# 0
 expr:	O_ADD(term, expr)	# 1 # bnode->reg = binary("addq", bnode->left->reg, bnode->right->reg, true);
 expr:	O_SUB(term, expr)	# 1 # bnode->reg = binary("subq", bnode->left->reg, bnode->right->reg, false);
 expr:	O_MUL(term, expr)	# 1 # bnode->reg = binary("imulq", bnode->left->reg, bnode->right->reg, true);
+expr:	array			# 0 # printi("movq (%%%s), %%%s", bnode->reg, bnode->reg);
+
+array:	O_ARRAY(O_ID, expr)	# 3 # bnode->reg = reg_new_var(); printi("leaq (%%%s,%%%s,8), %%%s", bnode->left->reg, bnode->right->reg, bnode->reg);
+array:	O_ARRAY(array, imm)	# 2 # bnode->reg = bnode->left->reg; printi("movq (%%%s), %%%s", bnode->reg, bnode->reg); printi("leaq (%%%s,$%li,8), %%%s", bnode->left->reg, bnode->right->value, bnode->reg); 
+array:	O_ARRAY(array, expr)	# 3 # bnode->reg = bnode->left->reg; printi("movq (%%%s), %%%s", bnode->reg, bnode->reg); printi("leaq (%%%s,%%%s,8), %%%s", bnode->left->reg, bnode->right->reg, bnode->reg); 
 
 term:	imm			# 1 # printi("movq $%i, %%%s", bnode->value, bnode->reg = reg_new_var());
 term:	O_ID			# 0
