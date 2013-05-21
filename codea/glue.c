@@ -13,7 +13,7 @@ void print_var_usage() {
 	int i;
 	for (i = 0; i < 9; i++)
 		printf("%s: %d  ", vars[i], var_usage[i]);
-	
+
 	printf("\n");
 }
 
@@ -24,9 +24,15 @@ void reg_reset_all() {
 void funcdef(char *name, symbol_table *table, ast_node *node) {
 	printf(".globl %1$s\n.type %1$s, @function\n%1$s:\n", name);
 
-//	symbol_table_print(table);
+	if (table != NULL) {
+		printf("#");
 
-	reg_reset();
+		do {
+			printf(" %s@%s", table->id, table->reg);
+		} while((table = table->next) != NULL);
+
+		printf("\n");
+	}
 
 	int i;
 	symbol_table *element;
