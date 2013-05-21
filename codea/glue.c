@@ -26,7 +26,7 @@ void funcdef(char *name, symbol_table *table, ast_node *node) {
 
 //	symbol_table_print(table);
 
-//	reg_reset(); TODO ?!?!
+	reg_reset();
 
 	int i;
 	symbol_table *element;
