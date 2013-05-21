@@ -18,6 +18,8 @@
 
 # Temporary files
 *~
+*testcodeaout*.s
+*testcodebout*.s
 
 # Specific binaries
 asma
@@ -40,3 +42,6 @@ parser.output
 # ox output files
 oxout.l
 oxout.y
+
+# burg output files
+code.c
