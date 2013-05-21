@@ -18,7 +18,7 @@ void print_var_usage() {
 }
 
 void reg_reset_all() {
-reg_reset();
+	reg_reset();
 }
 
 void funcdef(char *name, symbol_table *table, ast_node *node) {
@@ -47,14 +47,21 @@ char *binary(char *op, char *first, char *second, bool commutative) {
 		printi("%s %%%s, %%%s", op, second, reg);
 	} else if (!first_is_par && !second_is_par) {
 		reg = first;
-		printi("%s %%%s, %%%s", op, first, second);
-		reg_free(second);
+		printi("%s %%%s, %%%s", op, second, first);
+//		reg_free(second);
 	} else if (first_is_par && !second_is_par) {
 		reg = second;
 		printi("%s %%%s, %%%s", op, first, second);
 	} else if (commutative) {
+		printf("#\tcommutativity strikes back!\n");
+		reg = second;
+		printi("%s %%%s, %%%s", op, first, second);
+	} else if (!first_is_par && second_is_par) {
+		reg = reg_new_var();
+		printi("movq %%%s, %%%s", second, reg);
+		printi("%s %%%s, %%%s", op, reg, first);
+		reg_free(reg);
 		reg = first;
-		printi("%s %%%s, %%%s", op, second, first);
 	} else {
 		fprintf(stderr, "Failed to arrange for \"%s %%%s, %%%s\"!", op, first, second);
 		exit(4);
