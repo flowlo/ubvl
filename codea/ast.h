@@ -36,16 +36,7 @@ typedef struct burm_state *STATEPTR_TYPE;
 	CALLBACK(O_ID) \
 	CALLBACK(O_NUM) \
 	CALLBACK(O_RETURN) \
-	CALLBACK(O_ASSIGN) \
-	CALLBACK(O_IF) \
-	CALLBACK(O_WHILE) \
-	CALLBACK(O_STATS) \
-	CALLBACK(O_ELSE) \
-	CALLBACK(O_ARRAY) \
-	CALLBACK(O_OR) \
-	CALLBACK(O_NOT) \
-	CALLBACK(O_ARG) \
-	CALLBACK(O_VARDEF)
+	CALLBACK(O_ARRAY)
 
 #define GENERATE_FIELD(FIELD) FIELD,
 #define GENERATE_STRING(STRING) #STRING,
@@ -83,8 +74,5 @@ typedef ast_node* ast_node_ptr;
 ast_node *node_new(int op, ast_node *left, ast_node *right);
 ast_node *node_new_num(long value);
 ast_node *node_new_id(char *name, symbol_table *table);
-ast_node *node_new_call(char *name, ast_node *args);
-ast_node *node_new_definition(char *name, symbol_table *table, ast_node *value);
-ast_node *node_new_else(ast_node *first, ast_node *second, ast_node *condition);
 void node_print(ast_node *node, int indent);
 #endif
