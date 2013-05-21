@@ -37,15 +37,21 @@ extern void burm_label(NODEPTR_TYPE p);
 @attributes { @autoinh symbol_table *sym; symbol_table *out; ast_node *node; }					Stat
 @attributes { symbol_dimensions dimensions; }									Type
 @attributes { @autosyn char* value; @autosyn symbol_dimensions dimensions; }					Vardef
-@attributes { @autoinh symbol_table *sym; @autosyn symbol_dimensions dimensions; @autosyn ast_node *node; }	Expr Term Lexpr
+@attributes { @autoinh symbol_table *sym; @autosyn symbol_dimensions dimensions; @autosyn ast_node *node; }	Expr Term Lexpr Add Sub Mul
 
 @traversal @preorder assert
 @traversal @preorder code
 
-@macro arithmetic(type,)
-	@i @Expr.0.dimensions@ = @Expr.1.dimensions@ + @Term.dimensions@;
-	@i @Expr.0.node@ = node_new(type, @Expr.1.node@, @Term.node@);
-	@assert is_integer(@Expr.dimensions@); is_integer(@Term.dimensions@);
+@macro arithmetic(op,type,)
+        @i @op.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	@i @op.0.node@ = node_new(type, @Term.0.node@, @Term.1.node@);
+        @assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
+@end
+
+@macro arithmeticRecursive(op,type,)
+        @i @op.0.dimensions@ = @op.1.dimensions@ + @Term.dimensions@;
+	@i @op.0.node@ = node_new(type, @op.1.node@, @Term.node@);
+        @assert is_integer(@op.1.dimensions@); is_integer(@Term.dimensions@);
 @end
 
 @macro boolean(type,)
@@ -70,11 +76,20 @@ Bterm	:	'(' Bool ')'
 	|	Expr '#' Expr					@{ boolean(O_NEQ,) @}
 	|	Expr '<' Expr					@{ boolean(O_LT,) @}
 	;
-Expr	:	Term
-	|	Expr '-' Term					@{ arithmetic(O_SUB,) @}
-	|	Expr '+' Term					@{ arithmetic(O_ADD,) @}
-	|	Expr '*' Term					@{ arithmetic(O_MUL,) @}
-	;
+Expr    :       Term
+        |       Add
+        |       Sub
+        |       Mul
+        ;
+Add     :       Term '+' Term                                   @{ arithmetic(Add,O_ADD,) @}
+        |       Add '+' Term                                    @{ arithmeticRecursive(Add,O_ADD,) @}
+        ;
+Sub     :       Term '-' Term                                   @{ arithmetic(Sub,O_SUB,) @}
+        |       Sub '-' Term                                    @{ arithmeticRecursive(Sub,O_SUB,) @}
+        ;
+Mul     :       Term '*' Term                                   @{ arithmetic(Mul,O_MUL,) @}
+        |       Mul '*' Term                                    @{ arithmeticRecursive(Mul,O_MUL,) @}
+        ;
 Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
