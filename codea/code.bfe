@@ -16,14 +16,6 @@
 
 %%
 stat:	ret			# 0 # printi("ret");
-stat:	O_VARDEF(expr)		# 1 # printi("movq %%%s, %%%s", bnode->left->reg, bnode->reg);
-stat:	O_VARDEF(imm)		# 0 # printi("movq $%li, %%%s", bnode->left->value, bnode->reg);
-stat:	O_ASSIGN(O_ID, expr)	# 1 # printi("movq %%%s, %%%s", bnode->right->reg, bnode->left->reg);
-stat:	O_ASSIGN(O_ID, imm)	# 0 # printi("movq $%li, %%%s", bnode->right->value, bnode->left->reg);
-stat:	O_STATS			# 0 # if (bnode->name != NULL) { printf("%s:\n", bnode->name); }
-
-stat:	O_IF(O_ELSE, bool)	# 0 # printf(":(\n");
-stat:	O_IF(O_STATS, bool)	# 0
 
 ret:	O_RETURN(imm)		# 0 # printi("movq $%li, %%rax", bnode->left->value);
 ret:	O_RETURN(expr)		# 1 # if (strcmp(bnode->left->reg, "rax") != 0) { printi("movq %%%s, %%rax", bnode->left->reg); }
@@ -42,13 +34,6 @@ array:	O_ARRAY(array, expr)	# 3 # bnode->reg = bnode->left->reg; printi("movq (%
 term:	imm			# 1 # printi("movq $%i, %%%s", bnode->value, bnode->reg = reg_new_var());
 term:	O_ID			# 0
 term:	expr			# 0
-
-bterm:	O_NOT(bterm)		# 0 # printi("not %%%s", bnode->reg);
-bterm:	O_NEQ(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->left->reg, bnode->right->reg); printi("jne %s", bnode->name);
-bterm:	O_LT(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->left->reg, bnode->right->reg); printi("jl %s", bnode->name);
-
-bool:	bterm			# 0
-bool:	O_OR(bool, bterm)	# 0
 
 imm:	O_NUM			# 0
 imm:	O_ADD(imm, imm)		# 0 # bnode->value = bnode->left->value + bnode->right->value;
