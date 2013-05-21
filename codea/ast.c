@@ -59,7 +59,10 @@ ast_node *node_new_id(char *name, symbol_table *table) {
 	result->left = NULL;
 	result->right = NULL;
 	result->name = strdup(name);
-	result->reg = symbol_table_get(table, name)->reg;
+	table = symbol_table_get(table, name);
+
+	if (table != NULL)
+		result->reg = table->reg;
 
 	return result;
 }
