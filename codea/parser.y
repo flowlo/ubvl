@@ -149,15 +149,15 @@ Stat	:	T_RETURN Expr
 	;
 Funcdef	:	T_ID '(' Pars ')' Stats T_END
 @{
-	@e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); reg_reset_all();
+	@e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); reg_reset();
 
 	@code /* node_print(@Stats.node@, 2); */ funcdef(@T_ID.value@, @Pars.sym@, @Stats.node@);
 @}
 	|	T_ID '(' ')' Stats T_END
 @{
-	@i @Stats.sym@ = NULL;
+	@i @Stats.sym@ = NULL; reg_reset();
 
-	@code reg_reset_all(); //node_print(@Stats.node@, 2);
+	@code //node_print(@Stats.node@, 2);
 	funcdef(@T_ID.value@, NULL, @Stats.node@);
 @}
 	;

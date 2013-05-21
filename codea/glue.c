@@ -17,8 +17,9 @@ void print_var_usage() {
 	printf("\n");
 }
 
-void reg_reset_all() {
-	reg_reset();
+void reg_reset() {
+	memset(var_usage, 0, sizeof(int) * 9);
+	memset(par_usage, 0, sizeof(int) * 6);
 }
 
 void funcdef(char *name, symbol_table *table, ast_node *node) {
