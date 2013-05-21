@@ -27,7 +27,7 @@ extern void burm_label(NODEPTR_TYPE p);
 
 %left  '+'  '-'
 %left  '*'
-%token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
+%token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN
 %start Program
 
 @attributes { int value; }											T_NUM
