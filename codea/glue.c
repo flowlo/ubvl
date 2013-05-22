@@ -56,14 +56,22 @@ char *binary(char *op, char *first, char *second, bool commutative) {
 		reg = first;
 		printi("%s %%%s, %%%s", op, second, first);
 //		reg_free(second);
-	} else if (first_is_par && !second_is_par) {
-		reg = second;
-		printi("%s %%%s, %%%s", op, first, second);
-	} else if (commutative) {
-		printf("#\tcommutativity strikes back!\n");
-		reg = second;
-		printi("%s %%%s, %%%s", op, first, second);
 	} else if (!first_is_par && second_is_par) {
+#ifdef DEBUG
+		printf("#\tshould do it!\n");
+#endif
+		reg = first;
+		printi("%s %%%s, %%%s", op, second, first);
+	} else if (commutative) {
+#ifdef DEBUG
+		printf("#\tcommutativity strikes back!\n");
+#endif
+		reg = second;
+		printi("%s %%%s, %%%s", op, first, second);
+	} else if (first_is_par && !second_is_par) {
+#ifdef DEBUG
+		printf("#\tlet me see ...\n");
+#endif
 		reg = reg_new_var();
 		printi("movq %%%s, %%%s", second, reg);
 		printi("%s %%%s, %%%s", op, reg, first);
