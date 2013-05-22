@@ -199,7 +199,8 @@ Term	:	'(' Expr ')'
 @{
 	@i @Term.0.dimensions@ = @Term.1.dimensions@ - 1;
 	@i @Term.0.node@ = node_new(O_ARRAY, @Term.1.node@, @Expr.node@);
-	@assert is_array(@Term.dimensions@); is_integer(@Expr.dimensions@);
+
+	@assert is_array(@Term.1.dimensions@); is_integer(@Expr.dimensions@);
 @}
 	|	T_ID
 @{
