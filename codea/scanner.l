@@ -22,6 +22,15 @@ extern int yylineno;
 "of"				return T_OF;
 "int"				return T_INT;
 "return"			return T_RETURN;
+"if"				return T_IF;
+"then"				return T_THEN;
+"else"				return T_ELSE;
+"while"				return T_WHILE;
+"do"				return T_DO;
+"var"				return T_VAR;
+"not"				return T_NOT;
+"or"				return T_OR;
+":="				return T_ASSIGN;
 [0-9]+				return T_NUM; @{ @T_NUM.value@ = atol(yytext); @}
 \$[0-9a-fA-F]+			return T_NUM; @{ unsigned long hex; sscanf(yytext + 1, "%lx", &hex); @T_NUM.value@ = hex; @}
 [a-zA-Z][a-zA-Z0-9]*		return T_ID;  @{ @T_ID.value@ = strdup(yytext); @}
@@ -34,6 +43,8 @@ extern int yylineno;
 ")"				return ')';
 ","				return ',';
 ":"				return ':';
+"<"				return '<';
+"#"				return '#';
 "["				return '[';
 "]"				return ']';
 "-"				return '-';
