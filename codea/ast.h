@@ -65,6 +65,7 @@ typedef struct ast_node {
 	long value;
 	char *reg;
 	char *name;
+	bool is_imm;
 	STATEPTR_TYPE label;
 } ast_node;
 

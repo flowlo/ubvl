@@ -87,7 +87,13 @@ Add     :       Term '+' Term                                   @{ arithmetic(Ad
 Sub     :       Term '-' Term                                   @{ arithmetic(Sub,O_SUB,) @}
         |       Sub '-' Term                                    @{ arithmeticRecursive(Sub,O_SUB,) @}
         ;
-Mul     :       Term '*' Term                                   @{ arithmetic(Mul,O_MUL,) @}
+Mul     :       Term '*' Term
+@{
+        @i @Mul.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	@i @Mul.0.node@ = ((@Term.0.node@->is_imm && @Term.0.node@->value == 0) || (@Term.1.node@->is_imm && @Term.1.node@->value == 0)) ? node_new_num(0) :  node_new(O_MUL, @Term.0.node@, @Term.1.node@);
+        @assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
+
+@}
         |       Mul '*' Term                                    @{ arithmeticRecursive(Mul,O_MUL,) @}
         ;
 Stat	:	T_RETURN Expr
