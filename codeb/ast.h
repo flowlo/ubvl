@@ -85,7 +85,5 @@ ast_node *node_new(int op, ast_node *left, ast_node *right);
 ast_node *node_new_num(long value);
 ast_node *node_new_id(char *name, symbol_table *table);
 ast_node *node_new_call(char *name, ast_node *args);
-ast_node *node_new_definition(char *name, symbol_table *table, ast_node *value);
-ast_node *node_new_else(ast_node *first, ast_node *second, ast_node *condition);
 void node_print(ast_node *node, int indent);
 #endif

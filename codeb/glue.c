@@ -22,7 +22,7 @@ void reg_reset() {
 	memset(par_usage, 0, sizeof(int) * 6);
 }
 
-void funcdef(char *name, symbol_table *table, ast_node *node) {
+void funcdef(char *name, symbol_table *table) {
 	printf(".globl %1$s\n.type %1$s, @function\n%1$s:\n", name);
 
 	if (table != NULL) {

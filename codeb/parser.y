@@ -14,15 +14,11 @@
 #include "glue.h"
 
 #define YYERROR_VERBOSE
-#define burm_invoke(root) burm_label(root); burm_reduce(root, 1);
 
 extern int yylineno;
 extern int label;
 extern int yyerror(const char*);
 extern int yylex(void);
-
-extern void burm_reduce(NODEPTR_TYPE bnode, int goalnt);
-extern void burm_label(NODEPTR_TYPE p);
 %}
 
 %left  '+'  '-'
@@ -33,8 +29,9 @@ extern void burm_label(NODEPTR_TYPE p);
 @attributes { int value; }											T_NUM
 @attributes { char *value; }											T_ID
 @attributes { symbol_table *sym; }										Pars
-@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; }						Args Bterm Bool Stats
-@attributes { @autoinh symbol_table *sym; symbol_table *out; ast_node *node; }					Stat
+@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; }						Args Bterm Bool
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; }						Stats
+@attributes { @autoinh symbol_table *sym; symbol_table *out; @autoinh int labels; }				Stat
 @attributes { symbol_dimensions dimensions; }									Type
 @attributes { @autosyn char* value; @autosyn symbol_dimensions dimensions; }					Vardef
 @attributes { @autoinh symbol_table *sym; @autosyn symbol_dimensions dimensions; @autosyn ast_node *node; }	Expr Term Lexpr Add Sub Mul
@@ -60,27 +57,20 @@ extern void burm_label(NODEPTR_TYPE p);
 @end
 
 %%
-Program	:	Program Funcdef ';'
-	|
-	;
+Program	:	Program Funcdef ';' | ;
 Vardef	:	T_ID ':' Type
 	;
 Args	:	Expr 						@{ @i @Args.node@ = node_new(O_ARG, @Expr.node@, NULL); @}
 	|	Args ',' Expr					@{ @i @Args.0.node@ = node_new(O_ARG, @Expr.node@, @Args.1.node@); @}
 	;
-Bool	:	Bterm
-	|	Bool T_OR Bterm 				@{ @i @Bool.0.node@ = node_new(O_OR, @Bool.1.node@, @Bterm.node@); @}
+Bool	:	Bterm | Bool T_OR Bterm				@{ @i @Bool.0.node@ = node_new(O_OR, @Bool.1.node@, @Bterm.node@); @}
 	;
 Bterm	:	'(' Bool ')'
 	|	T_NOT Bterm					@{ @i @Bterm.0.node@ = node_new(O_NOT, @Bterm.1.node@, NULL); @}
 	|	Expr '#' Expr					@{ boolean(O_NEQ,) @}
 	|	Expr '<' Expr					@{ boolean(O_LT,) @}
 	;
-Expr    :       Term
-        |       Add
-        |       Sub
-        |       Mul
-        ;
+Expr    :       Term | Add | Sub | Mul ;
 Add     :       Term '+' Term                                   @{ arithmetic(Add,O_ADD,) @}
         |       Add '+' Term                                    @{ arithmeticRecursive(Add,O_ADD,) @}
         ;
@@ -98,72 +88,94 @@ Mul     :       Term '*' Term
 Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
-	@i @Stat.node@ = node_new(O_RETURN, @Expr.node@, NULL);
 
-	@code burm_invoke(@Stat.node@);
+	@code
+		burm_invoke(@Expr.node@);
+		if (@Expr.node@->is_imm) {
+			printi("movq $%ld, %%rax", @Expr.node@->value);
+		} else if (strcmp(@Expr.node@->reg, "rax") != 0) {
+			printi("movq %%%s, %%rax", @Expr.node@->reg);
+		}
+		printi("ret");
 @}
 	|	T_IF Bool T_THEN Stats T_END
 @{
 	@i @Stat.out@ = @Stat.sym@;
-	@i @Stat.node@ = node_new(O_IF, @Stats.node@, @Bool.node@);
+	@i @Stats.labels@ = @Stat.labels@ + 2;
 
-	@code /* burm_invoke(@Bool.node@); */ burm_invoke(@Stats.node@); printi("jmp _i_%lx", label);
-	@code @revorder(1) printf("_i_%lx:\n", label);
+	@code {
+		label = @Stat.labels@;
+		burm_invoke(@Bool.node@);
+		printi("jmp L%ld", @Stat.labels@ + 1);
+		printf("L%ld:\n", @Stat.labels@);
+	}
+	@code @revorder(1) {
+		printf("L%ld:\n", @Stat.labels@ + 1);
+	}
 @}
 	|	T_IF Bool T_THEN Stats T_ELSE Stats T_END
 @{
 	@i @Stat.out@ = @Stat.sym@;
 
-	@i @Stat.node@ = node_new_else(@Stats.0.node@, @Stats.1.node@, @Bool.node@);
-/*	@code burm_invoke(@Stat.node@); printi("jmp %s", @Stats.0.node@->name);
-	@code @revorder(1) printf("%s:\n", @Bool.node@->name);
-
-	@i @Stat.node@ = node_new(O_IF, @Stats.1.node@, @Bool.node@);
-	@code burm_invoke(@Stat.node@); @revorder(1) printf("huh?\n");
-	@code @revorder(1) printi("jmp c"); printf("b%lx:\n", label++); 
-	@code @revorder(1) printf("c:\n");
-*/
+	@code {
+		burm_invoke(@Bool.node@);
+		printf("# burm_invoke done!\n");
+	}
+	@code @revorder(1) {
+		printf("# This is after everything.\n");
+	}
 @}
 	|	T_WHILE Bool T_DO Stats T_END
 @{
 	@i @Stat.out@ = @Stat.sym@;
-	@i @Stat.node@ = node_new(O_WHILE, @Bool.node@, @Stats.node@);
+	@i @Stats.labels@ = @Stat.labels@ + 3;
+
+	@code {
+		printf("L%ld:\n", @Stat.labels@);
+		label = @Stat.labels@ + 1;
+		burm_invoke(@Bool.node@);
+		printi("jmp L%ld", @Stat.labels@ + 2);
+		printf("L%ld:\n", @Stat.labels@ + 1);
+	}
+	@code @revorder(1) {
+		printi("jmp L%ld", @Stat.labels@);
+		printf("L%ld:\n", @Stat.labels@ + 2);
+	}
 @}
 	|	Term
 @{
 	@i @Stat.out@ = @Stat.sym@;
-	@i @Stat.node@ = NULL;
 @}
 	|	T_VAR Vardef T_ASSIGN Expr
 @{
 	@i @Stat.out@ = symbol_table_add_var(symbol_table_clone(@Stat.sym@), @Vardef.value@, @Vardef.dimensions@, false);
-	@i @Stat.node@ = node_new_definition(@Vardef.value@, @Stat.out@, @Expr.node@);
 
-	@code burm_invoke(@Stat.node@);
+	@code burm_invoke(@Expr.node@);
 	@assert same_dimensions(@Vardef.dimensions@, @Expr.dimensions@);
 @}
 	|	Lexpr T_ASSIGN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
-	@i @Stat.node@ = node_new(O_ASSIGN, @Lexpr.node@, @Expr.node@);
 
 	@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 
-	@code burm_invoke(@Stat.node@);
+	@code burm_invoke(@Expr.node@);
 @}
 	;
 Funcdef	:	T_ID '(' Pars ')' Stats T_END
 @{
 	@e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); reg_reset();
+	@i @Stats.labels@ = 0;
 
-	@code /* node_print(@Stats.node@, 2); */ funcdef(@T_ID.value@, @Pars.sym@, @Stats.node@);
+	@code /* node_print(@Stats.node@, 2); */ funcdef(@T_ID.value@, @Pars.sym@);
 @}
 	|	T_ID '(' ')' Stats T_END
 @{
 	@i @Stats.sym@ = NULL; reg_reset();
+	@i @Stats.labels@ = 0;
 
 	@code //node_print(@Stats.node@, 2);
-	funcdef(@T_ID.value@, NULL, @Stats.node@);
+	funcdef(@T_ID.value@, NULL);
 @}
 	;
 Type	:	T_INT						@{ @i @Type.dimensions@ = 0; @}
@@ -172,13 +184,8 @@ Type	:	T_INT						@{ @i @Type.dimensions@ = 0; @}
 Stats	:	Stat ';' Stats
 @{
 	@i @Stats.1.sym@ = @Stat.out@;
-	@i @Stats.0.node@ = node_new(O_STATS, @Stat.node@, @Stats.1.node@);
-	@code burm_invoke(@Stats.0.node@);
 @}
 	|
-@{
-	@i @Stats.node@ = node_new(O_STATS, NULL, NULL);
-@}
 	;
 Pars	:	Vardef 						@{ @i @Pars.sym@ = symbol_table_add_par(NULL, @Vardef.value@, @Vardef.dimensions@, true); @}
 	|	Pars ',' Vardef					@{ @i @Pars.0.sym@ = symbol_table_add_par(@Pars.1.sym@, @Vardef.value@, @Vardef.dimensions@, true); @}
