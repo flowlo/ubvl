@@ -44,6 +44,81 @@ void funcdef(char *name, symbol_table *table, ast_node *node) {
 	return;
 }
 
+char *gen_add(ast_node *bnode) {
+	if (bnode->left->is_imm) {
+		if (bnode->left->value == 0) {
+			return bnode->right->reg;
+		}
+		else {
+			if (!is_par(bnode->right->reg)) {
+				printi("addq $%ld, %%%s", bnode->left->value, bnode->right->reg);
+				return bnode->right->reg;
+			}
+			else {
+				char *reg = reg_new_var();
+				printi("movq %%%s, %%%s", bnode->right->reg, reg);
+				printi("addq $%ld, %%%s", bnode->left->value, reg);
+				return reg;
+			}
+		}
+	}
+	else if (bnode->right->is_imm) {
+		if (bnode->right->value == 0) {
+			return bnode->left->reg;
+		}
+		else {
+			if (!is_par(bnode->left->reg)) {
+#ifdef DEBUG
+				printf("# right is imm, left is var:\n");
+#endif
+				printi("addq $%ld, %%%s", bnode->right->value, bnode->left->reg);
+				return bnode->left->reg;
+			}
+			else {
+				char *reg = reg_new_var();
+				printi("movq %%%s, %%%s", bnode->left->reg, reg);
+				printi("addq $%ld, %%%s", bnode->right->value, reg);
+				return reg;
+			}
+		}
+	}
+	else {
+		printi("# fallback");
+		return binary("addq", bnode->left->reg, bnode->right->reg, true);
+	}
+}
+
+char *gen_sub(ast_node *bnode) {
+	if (bnode->left->is_imm) {
+		if (bnode->left->value == 0 && false) {
+			printi("neg %%%s", bnode->right->reg);
+			return bnode->right->reg;
+		}
+		else {
+			printi("movq $%ld, %%%s", bnode->left->value, bnode->left->reg = reg_new_var());
+			return binary("subq", bnode->left->reg, bnode->right->reg, false);
+		}
+	}
+	else if (bnode->right->is_imm) {
+		if (bnode->right->value == 0) {
+			return bnode->left->reg;
+		}
+		else {
+			if (!is_par(bnode->left->reg)) {
+				printi("subq $%ld, %%%s", bnode->right->value, bnode->left->reg);
+				return bnode->left->reg;
+			}
+			else {
+				printi("movq $%ld, %%%s", bnode->right->value, bnode->right->reg = reg_new_var());
+				return binary("subq", bnode->left->reg, bnode->right->reg, false);
+			}
+		}
+	}
+	else {
+		return binary("subq", bnode->left->reg, bnode->right->reg, false);
+	}
+}
+
 char *binary(char *op, char *first, char *second, bool commutative) {
 	bool first_is_par = is_par(first), second_is_par = is_par(second);
 	char *reg;
@@ -56,14 +131,22 @@ char *binary(char *op, char *first, char *second, bool commutative) {
 		reg = first;
 		printi("%s %%%s, %%%s", op, second, first);
 //		reg_free(second);
-	} else if (first_is_par && !second_is_par) {
-		reg = second;
-		printi("%s %%%s, %%%s", op, first, second);
-	} else if (commutative) {
-		printf("#\tcommutativity strikes back!\n");
-		reg = second;
-		printi("%s %%%s, %%%s", op, first, second);
 	} else if (!first_is_par && second_is_par) {
+#ifdef DEBUG
+		printf("#\tshould do it!\n");
+#endif
+		reg = first;
+		printi("%s %%%s, %%%s", op, second, first);
+	} else if (commutative) {
+#ifdef DEBUG
+		printf("#\tcommutativity strikes back!\n");
+#endif
+		reg = second;
+		printi("%s %%%s, %%%s", op, first, second);
+	} else if (first_is_par && !second_is_par) {
+#ifdef DEBUG
+		printf("#\tlet me see ...\n");
+#endif
 		reg = reg_new_var();
 		printi("movq %%%s, %%%s", second, reg);
 		printi("%s %%%s, %%%s", op, reg, first);

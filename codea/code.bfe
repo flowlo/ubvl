@@ -9,10 +9,6 @@
 #include "ast.h"
 #include "glue.h"
 #endif
-/*
-expr:	O_MUL(imm, expr)	# 2 # bnode->reg = gen_mul(bnode);
-expr:	O_MUL(term, imm)	# 2 # bnode->reg = gen_mul(bnode);
-*/
 %}
 
 %start stat

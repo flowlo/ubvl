@@ -30,9 +30,13 @@ ret:	O_RETURN(expr)		# 1 # if (strcmp(bnode->left->reg, "rax") != 0) { printi("m
 
 expr:	imm			# 1 # printi("movq $%i, %%%s", bnode->value, bnode->reg = reg_new_var());
 expr:	O_ID			# 0
-expr:	O_ADD(term, expr)	# 1 # bnode->reg = binary("addq", bnode->left->reg, bnode->right->reg, true);
-expr:	O_SUB(term, expr)	# 1 # bnode->reg = binary("subq", bnode->left->reg, bnode->right->reg, false);
-expr:	O_MUL(term, expr)	# 1 # bnode->reg = binary("imulq", bnode->left->reg, bnode->right->reg, true);
+expr:	O_ADD(term, expr)	# 4 # bnode->reg = gen_add(bnode);
+expr:	O_ADD(imm, expr)	# 2 # bnode->reg = gen_add(bnode);
+expr:	O_ADD(expr, imm)	# 2 # bnode->reg = gen_add(bnode);
+expr:	O_SUB(term, expr)	# 4 # bnode->reg = gen_sub(bnode);
+expr:	O_SUB(imm, expr)	# 2 # bnode->reg = gen_sub(bnode);
+expr:	O_SUB(term, imm)	# 2 # bnode->reg = gen_sub(bnode);
+expr:	O_MUL(term, expr)	# 4 # bnode->reg = binary("imulq", bnode->left->reg, bnode->right->reg, true);
 expr:	array			# 0 # printi("movq (%%%s), %%%s", bnode->reg, bnode->reg);
 
 array:	O_ARRAY(O_ID, expr)	# 3 # bnode->reg = reg_new_var(); printi("leaq (%%%s,%%%s,8), %%%s", bnode->left->reg, bnode->right->reg, bnode->reg);
@@ -50,9 +54,9 @@ bterm:	O_LT(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->left->reg, bnode->
 bool:	bterm			# 0
 bool:	O_OR(bool, bterm)	# 0
 
-imm:	O_NUM			# 0
-imm:	O_ADD(imm, imm)		# 0 # bnode->value = bnode->left->value + bnode->right->value;
-imm:	O_SUB(imm, imm)		# 0 # bnode->value = bnode->left->value - bnode->right->value;
-imm:	O_MUL(imm, imm)		# 0 # bnode->value = bnode->left->value * bnode->right->value;
-imm:	O_LT(imm, imm)		# 0 # bnode->value = bnode->left->value < bnode->right->value;
-imm:	O_NEQ(imm, imm)		# 0 # bnode->value = bnode->left->value != bnode->right->value;
+imm:	O_NUM			# 0 # bnode->is_imm = true;
+imm:	O_ADD(imm, imm)		# 0 # bnode->value = bnode->left->value + bnode->right->value; bnode->is_imm = true;
+imm:	O_SUB(imm, imm)		# 0 # bnode->value = bnode->left->value - bnode->right->value; bnode->is_imm = true;
+imm:	O_MUL(imm, imm)		# 0 # bnode->value = bnode->left->value * bnode->right->value; bnode->is_imm = true;
+imm:	O_LT(imm, imm)		# 0 # bnode->value = bnode->left->value < bnode->right->value; bnode->is_imm = true;
+imm:	O_NEQ(imm, imm)		# 0 # bnode->value = bnode->left->value != bnode->right->value; bnode->is_imm = true;

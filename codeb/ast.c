@@ -16,7 +16,8 @@ ast_node *node_new(int op, ast_node *left, ast_node *right) {
 	result->op = op;
 	result->left = left;
 	result->right = right;
-	
+	result->is_imm = false;
+
 	switch (op) {
 		case O_ELSE:
 			left->name = (char*)malloc(16);
@@ -49,6 +50,7 @@ ast_node *node_new_num(long value) {
 	result->left = NULL;
 	result->right = NULL;
 	result->value = value;
+	result->is_imm = true;
 
 	return result;
 }
@@ -59,6 +61,7 @@ ast_node *node_new_id(char *name, symbol_table *table) {
 	result->left = NULL;
 	result->right = NULL;
 	result->name = strdup(name);
+	result->is_imm = false;
 	table = symbol_table_get(table, name);
 
 	if (table != NULL)
@@ -78,6 +81,7 @@ ast_node *node_new_definition(char *name, symbol_table *table, ast_node *value) 
 	result->right = NULL;
 	result->name = strdup(name);
 	result->reg = symbol_table_get(table, name)->reg;
+	result->is_imm = false;
 
 	return result;
 }
