@@ -4,7 +4,8 @@
 #include "symbol_table.h"
 
 #define printi(...) putchar('\t'); printf(__VA_ARGS__); putchar('\n');
-#define burm_invoke(root) printf("# burm_invoke\n"); node_print(root, 0); burm_label(root); burm_reduce(root, 1);
+#define printl(label) printf("L%ld:\n", label);
+#define burm_invoke(root) /* printf("# burm_invoke\n"); node_print(root, 0); */ burm_label(root); burm_reduce(root, 1);
 
 void funcdef(char *name, symbol_table *table);
 char *gen_add(ast_node *bnode);

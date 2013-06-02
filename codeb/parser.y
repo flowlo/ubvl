@@ -30,11 +30,11 @@ extern int yylex(void);
 @attributes { char *value; }											T_ID
 @attributes { symbol_table *sym; }										Pars
 @attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; }						Args Bterm Bool
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; }						Stats
-@attributes { @autoinh symbol_table *sym; symbol_table *out; @autoinh int labels; }				Stat
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; }						Stats Else
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; symbol_table *out; }				Stat
 @attributes { symbol_dimensions dimensions; }									Type
 @attributes { @autosyn char* value; @autosyn symbol_dimensions dimensions; }					Vardef
-@attributes { @autoinh symbol_table *sym; @autosyn symbol_dimensions dimensions; @autosyn ast_node *node; }	Expr Term Lexpr Add Sub Mul
+@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; @autosyn symbol_dimensions dimensions; }	Expr Term Lexpr Add Sub Mul
 
 @traversal @preorder assert
 @traversal @preorder code
@@ -85,6 +85,16 @@ Mul     :       Term '*' Term
 @}
         |       Mul '*' Term                                    @{ arithmeticRecursive(Mul,O_MUL,) @}
         ;
+Else	:	Stats T_END
+@{
+	@i @Stats.labels@ = @Else.labels@ + 4;
+
+	@code {
+		printi("jmp L%ld", @Else.labels@ + 2);
+		printl(@Else.labels@ + 1);
+	}
+@}
+	;
 Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
@@ -107,22 +117,24 @@ Stat	:	T_RETURN Expr
 		label = @Stat.labels@;
 		burm_invoke(@Bool.node@);
 		printi("jmp L%ld", @Stat.labels@ + 1);
-		printf("L%ld:\n", @Stat.labels@);
+		printl(@Stat.labels@);
 	}
 	@code @revorder(1) {
-		printf("L%ld:\n", @Stat.labels@ + 1);
+		printl(@Stat.labels@ + 1);
 	}
 @}
-	|	T_IF Bool T_THEN Stats T_ELSE Stats T_END
+	|	T_IF Bool T_THEN Stats T_ELSE Else
 @{
 	@i @Stat.out@ = @Stat.sym@;
 
 	@code {
+		label = @Stat.labels@;
 		burm_invoke(@Bool.node@);
-		printf("# burm_invoke done!\n");
+		printi("jmp L%ld", @Stat.labels@ + 1);
+		printl(@Stat.labels@);
 	}
 	@code @revorder(1) {
-		printf("# This is after everything.\n");
+		printl(@Stat.labels@ + 2);
 	}
 @}
 	|	T_WHILE Bool T_DO Stats T_END
@@ -131,15 +143,15 @@ Stat	:	T_RETURN Expr
 	@i @Stats.labels@ = @Stat.labels@ + 3;
 
 	@code {
-		printf("L%ld:\n", @Stat.labels@);
+		printl(@Stat.labels@);
 		label = @Stat.labels@ + 1;
 		burm_invoke(@Bool.node@);
 		printi("jmp L%ld", @Stat.labels@ + 2);
-		printf("L%ld:\n", @Stat.labels@ + 1);
+		printl(@Stat.labels@ + 1);
 	}
 	@code @revorder(1) {
 		printi("jmp L%ld", @Stat.labels@);
-		printf("L%ld:\n", @Stat.labels@ + 2);
+		printl(@Stat.labels@ + 2);
 	}
 @}
 	|	Term
@@ -159,7 +171,16 @@ Stat	:	T_RETURN Expr
 
 	@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 
-	@code burm_invoke(@Expr.node@);
+	@code {
+		burm_invoke(@Lexpr.node@);
+		burm_invoke(@Expr.node@);
+
+		if (@Expr.node@->is_imm) {
+			printi("movq $%li, %%%s", @Expr.node@->value, @Lexpr.node@->reg);
+		} else {
+			printi("movq %%%s, %%%s", @Expr.node@->reg, @Lexpr.node@->reg);
+		}
+	}
 @}
 	;
 Funcdef	:	T_ID '(' Pars ')' Stats T_END
@@ -167,15 +188,14 @@ Funcdef	:	T_ID '(' Pars ')' Stats T_END
 	@e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); reg_reset();
 	@i @Stats.labels@ = 0;
 
-	@code /* node_print(@Stats.node@, 2); */ funcdef(@T_ID.value@, @Pars.sym@);
+	@code funcdef(@T_ID.value@, @Pars.sym@);
 @}
 	|	T_ID '(' ')' Stats T_END
 @{
 	@i @Stats.sym@ = NULL; reg_reset();
 	@i @Stats.labels@ = 0;
 
-	@code //node_print(@Stats.node@, 2);
-	funcdef(@T_ID.value@, NULL);
+	@code funcdef(@T_ID.value@, NULL);
 @}
 	;
 Type	:	T_INT						@{ @i @Type.dimensions@ = 0; @}
