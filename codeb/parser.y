@@ -30,8 +30,9 @@ extern int yylex(void);
 @attributes { char *value; }											T_ID
 @attributes { symbol_table *sym; }										Pars
 @attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; }						Args Bterm Bool
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; }						Stats Else
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; symbol_table *out; }				Stat
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; }				Stats
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; @autoinh int hook; }		Else
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; symbol_table *out; }		Stat
 @attributes { symbol_dimensions dimensions; }									Type
 @attributes { @autosyn char* value; @autosyn symbol_dimensions dimensions; }					Vardef
 @attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; @autosyn symbol_dimensions dimensions; }	Expr Term Lexpr Add Sub Mul
@@ -87,17 +88,19 @@ Mul     :       Term '*' Term
         ;
 Else	:	Stats T_END
 @{
-	@i @Stats.labels@ = @Else.labels@ + 4;
+	@i @Stats.labels@ = @Else.labels@;
+	@i @Else.labels_out@ = @Stats.labels_out@;
 
 	@code {
-		printi("jmp L%ld", @Else.labels@ + 2);
-		printl(@Else.labels@ + 1);
+		printi("jmp L%ld", @Else.hook@ + 2);
+		printl(@Else.hook@ + 1);
 	}
 @}
 	;
 Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
+	@i @Stat.labels_out@ = @Stat.labels@;
 
 	@code
 		burm_invoke(@Expr.node@);
@@ -112,6 +115,7 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stats.labels@ = @Stat.labels@ + 2;
+	@i @Stat.labels_out@ = @Stats.labels_out@;
 
 	@code {
 		label = @Stat.labels@;
@@ -126,6 +130,10 @@ Stat	:	T_RETURN Expr
 	|	T_IF Bool T_THEN Stats T_ELSE Else
 @{
 	@i @Stat.out@ = @Stat.sym@;
+	@i @Stats.labels@ = @Stat.labels@ + 3;
+	@i @Else.hook@ = @Stat.labels@;
+	@i @Else.labels@ = @Stats.labels_out@;
+	@i @Stat.labels_out@ = @Else.labels_out@;
 
 	@code {
 		label = @Stat.labels@;
@@ -141,6 +149,7 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stats.labels@ = @Stat.labels@ + 3;
+	@i @Stat.labels_out@ = @Stats.labels_out@;
 
 	@code {
 		printl(@Stat.labels@);
@@ -157,10 +166,12 @@ Stat	:	T_RETURN Expr
 	|	Term
 @{
 	@i @Stat.out@ = @Stat.sym@;
+	@i @Stat.labels_out@ = @Stat.labels@;
 @}
 	|	T_VAR Vardef T_ASSIGN Expr
 @{
 	@i @Stat.out@ = symbol_table_add_var(symbol_table_clone(@Stat.sym@), @Vardef.value@, @Vardef.dimensions@, false);
+	@i @Stat.labels_out@ = @Stat.labels@;
 
 	@code burm_invoke(@Expr.node@);
 	@assert same_dimensions(@Vardef.dimensions@, @Expr.dimensions@);
@@ -168,6 +179,7 @@ Stat	:	T_RETURN Expr
 	|	Lexpr T_ASSIGN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
+	@i @Stat.labels_out@ = @Stat.labels@;
 
 	@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 
@@ -204,8 +216,13 @@ Type	:	T_INT						@{ @i @Type.dimensions@ = 0; @}
 Stats	:	Stat ';' Stats
 @{
 	@i @Stats.1.sym@ = @Stat.out@;
+	@i @Stats.1.labels@ = @Stat.labels_out@;
+	@i @Stats.0.labels_out@ = @Stats.1.labels_out@;
 @}
 	|
+@{
+	@i @Stats.labels_out@ = @Stats.labels@;
+@}
 	;
 Pars	:	Vardef 						@{ @i @Pars.sym@ = symbol_table_add_par(NULL, @Vardef.value@, @Vardef.dimensions@, true); @}
 	|	Pars ',' Vardef					@{ @i @Pars.0.sym@ = symbol_table_add_par(@Pars.1.sym@, @Vardef.value@, @Vardef.dimensions@, true); @}
