@@ -25,6 +25,8 @@ lexpr:	O_LEXPR(array, expr)	# 0 # printi("movq %%%s, (%%%s)", bnode->right->reg,
 lexpr:	O_LEXPR(array, imm)	# 0 # printi("movq $%ld, (%%%s)", bnode->right->value, bnode->left->reg);
 lexpr:	O_LEXPR(O_ID, expr)	# 0 # printi("movq %%%s, %%%s", bnode->right->reg, bnode->left->reg);
 lexpr:	O_LEXPR(O_ID, imm)	# 0 # printi("movq $%ld, %%%s", bnode->right->value, bnode->left->reg);
+lexpr:	O_LEXPR(O_ID, O_ADD(O_ID, O_NUM)) # 0 # if (bnode->right->right->value == 1 && strcmp(bnode->left->name, bnode->right->left->name) == 0) { printi("incq %%%s", bnode->left->reg); } else { printi("leaq %ld (%%%s), %%%s", bnode->right->right->value, bnode->right->left->reg, bnode->left->reg); }
+lexpr:	O_LEXPR(O_ID, O_SUB(O_ID, O_NUM)) # 0 # if (bnode->right->right->value == 1 && strcmp(bnode->left->name, bnode->right->left->name) == 0) { printi("decq %%%s", bnode->left->reg); } else { printi("leaq %ld (%%%s), %%%s", -bnode->right->right->value, bnode->right->left->reg, bnode->left->reg); }
 
 expr:	imm			# 1 # printi("movq $%i, %%%s", bnode->value, bnode->reg = reg_new_var());
 expr:	O_ID			# 0
