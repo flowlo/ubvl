@@ -95,8 +95,8 @@ Else	:	Stats T_END
 		@Stats.relevant@ = @Else.relevant@;
 		if (@Else.jump@) {
 			printi("jmp L%ld # else", @Else.hook@ + 2);
+			printl(@Else.hook@ + 1);
 		}
-		printl(@Else.hook@ + 1);
 	}
 @}
 	;
@@ -132,14 +132,16 @@ Stat	:	T_RETURN Expr
 			} else {
 				printi("jmp L%ld", @Stat.labels@ + 1);
 				@Stats.relevant@ = true;
+				printl(@Stat.labels@);
 			}
-			printl(@Stat.labels@);
 		} else {
 			@Stats.relevant@ = false;
 		}
 	}
 	@code @revorder(1) {
-		printl(@Stat.labels@ + 1);
+		if (@Stat.relevant@ && !@Bool.node@->is_imm) {
+			printl(@Stat.labels@ + 1);
+		}
 	}
 @}
 	|	T_IF Bool T_THEN Stats T_ELSE Else
@@ -157,6 +159,7 @@ Stat	:	T_RETURN Expr
 			burm_invoke(@Bool.node@);
 			if (!@Bool.node@->is_imm) {
 				printi("jmp L%ld", @Stat.labels@ + 1);
+				printl(@Stat.labels@);
 			} else if (@Bool.node@->value) {
 				printf("# if condition is always true\n");
 				@Else.relevant@ = false;
@@ -171,10 +174,11 @@ Stat	:	T_RETURN Expr
 			@Else.jump@ = false;
 			@Stats.relevant@ = false;
 		}
-		printl(@Stat.labels@);
 	}
 	@code @revorder(1) {
-		printl(@Stat.labels@ + 2);
+		if (@Stat.relevant@ && !@Bool.node@->is_imm) {
+			printl(@Stat.labels@ + 2);
+		}
 	}
 @}
 	|	T_WHILE Bool T_DO Stats T_END
@@ -197,15 +201,17 @@ Stat	:	T_RETURN Expr
 				}
 			} else {
 				printi("jmp L%ld", @Stat.labels@ + 2);
+				printl(@Stat.labels@ + 1);
 			}
 		}
-		printl(@Stat.labels@ + 1);
 	}
 	@code @revorder(1) {
 		if (@Stat.relevant@ && @Stats.relevant@) {
 			printi("jmp L%ld", @Stat.labels@);
+			if (!@Bool.node@->is_imm) {
+				printl(@Stat.labels@ + 2);
+			}
 		}
-		printl(@Stat.labels@ + 2);
 	}
 @}
 	|	Term
