@@ -12,13 +12,19 @@
 %}
 
 %start start
-%term O_NEQ=0 O_LT=1 O_ADD=2 O_MUL=3 O_SUB=4 O_ID=5 O_NUM=6 O_ARRAY=7 O_OR=8 O_NOT=9 O_ARG=10
+%term O_NEQ=0 O_LT=1 O_ADD=2 O_MUL=3 O_SUB=4 O_ID=5 O_NUM=6 O_ARRAY=7 O_OR=8 O_NOT=9 O_ARG=10 O_LEXPR=11
 
 %%
 start:	bool
 start:	expr
 start:	term
 start:	imm
+start:	lexpr
+
+lexpr:	O_LEXPR(array, expr)	# 0 # printi("movq %%%s, (%%%s)", bnode->right->reg, bnode->left->reg);
+lexpr:	O_LEXPR(array, imm)	# 0 # printi("movq $%ld, (%%%s)", bnode->right->value, bnode->left->reg);
+lexpr:	O_LEXPR(O_ID, expr)	# 0 # printi("movq %%%s, %%%s", bnode->right->reg, bnode->left->reg);
+lexpr:	O_LEXPR(O_ID, imm)	# 0 # printi("movq $%ld, %%%s", bnode->right->value, bnode->left->reg);
 
 expr:	imm			# 1 # printi("movq $%i, %%%s", bnode->value, bnode->reg = reg_new_var());
 expr:	O_ID			# 0

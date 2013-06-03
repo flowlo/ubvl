@@ -240,14 +240,8 @@ Stat	:	T_RETURN Expr
 
 	@code {
 		if (@Stat.relevant@) {
-			burm_invoke(@Lexpr.node@);
-			burm_invoke(@Expr.node@);
-
-			if (@Expr.node@->is_imm) {
-				printi("movq $%li, %%%s", @Expr.node@->value, @Lexpr.node@->reg);
-			} else {
-				printi("movq %%%s, %%%s", @Expr.node@->reg, @Lexpr.node@->reg);
-			}
+			ast_node *dummy = node_new(O_LEXPR, @Lexpr.node@, @Expr.node@);
+			burm_invoke(dummy);
 		}
 	}
 @}

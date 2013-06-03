@@ -173,10 +173,16 @@ char *binary(char *op, char *first, char *second, bool commutative) {
 
 	if (first_is_par && second_is_par) {
 		reg = reg_new_var();
+#ifdef DEBUG
+		printf("#\ttwo parameters\n");
+#endif
 		printi("movq %%%s, %%%s", first, reg);
 		printi("%s %%%s, %%%s", op, second, reg);
 	} else if (!first_is_par && !second_is_par) {
 		reg = first;
+#ifdef DEBUG
+		printf("#\ttwo variables!\n");
+#endif
 		printi("%s %%%s, %%%s", op, second, first);
 //		reg_free(second);
 	} else if (!first_is_par && second_is_par) {
