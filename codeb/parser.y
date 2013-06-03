@@ -26,16 +26,16 @@ extern int yylex(void);
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
 %start Program
 
-@attributes { int value; }											T_NUM
-@attributes { char *value; }											T_ID
-@attributes { symbol_table *sym; }										Pars
-@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; }						Args Bterm Bool
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; }				Stats
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; @autoinh int hook; }		Else
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; symbol_table *out; }		Stat
-@attributes { symbol_dimensions dimensions; }									Type
-@attributes { @autosyn char* value; @autosyn symbol_dimensions dimensions; }					Vardef
-@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; @autosyn symbol_dimensions dimensions; }	Expr Term Lexpr Add Sub Mul
+@attributes { int value; }													T_NUM
+@attributes { char *value; }													T_ID
+@attributes { symbol_table *sym; }												Pars
+@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; }								Args Bterm Bool
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; @autoinh bool relevant; }				Stats
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; @autoinh bool relevant; @autoinh int hook; bool jump; }	Else
+@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; @autoinh bool relevant; symbol_table *out; }	Stat
+@attributes { symbol_dimensions dimensions; }											Type
+@attributes { @autosyn char* value; @autosyn symbol_dimensions dimensions; }							Vardef
+@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; @autosyn symbol_dimensions dimensions; }			Expr Term Lexpr Add Sub Mul
 
 @traversal @preorder assert
 @traversal @preorder code
@@ -92,7 +92,10 @@ Else	:	Stats T_END
 	@i @Else.labels_out@ = @Stats.labels_out@;
 
 	@code {
-		printi("jmp L%ld", @Else.hook@ + 2);
+		@Stats.relevant@ = @Else.relevant@;
+		if (@Else.jump@) {
+			printi("jmp L%ld # else", @Else.hook@ + 2);
+		}
 		printl(@Else.hook@ + 1);
 	}
 @}
@@ -102,7 +105,8 @@ Stat	:	T_RETURN Expr
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stat.labels_out@ = @Stat.labels@;
 
-	@code
+	@code {
+		if (@Stat.relevant@) {
 		burm_invoke(@Expr.node@);
 		if (@Expr.node@->is_imm) {
 			printi("movq $%ld, %%rax", @Expr.node@->value);
@@ -110,6 +114,8 @@ Stat	:	T_RETURN Expr
 			printi("movq %%%s, %%rax", @Expr.node@->reg);
 		}
 		printi("ret");
+		}
+	}
 @}
 	|	T_IF Bool T_THEN Stats T_END
 @{
@@ -118,10 +124,19 @@ Stat	:	T_RETURN Expr
 	@i @Stat.labels_out@ = @Stats.labels_out@;
 
 	@code {
-		label = @Stat.labels@;
-		burm_invoke(@Bool.node@);
-		printi("jmp L%ld", @Stat.labels@ + 1);
-		printl(@Stat.labels@);
+		if (@Stat.relevant@) {
+			label = @Stat.labels@;
+			burm_invoke(@Bool.node@);
+			if (@Bool.node@->is_imm) {
+				@Stats.relevant@ = @Bool.node@->value;
+			} else {
+				printi("jmp L%ld", @Stat.labels@ + 1);
+				@Stats.relevant@ = true;
+			}
+			printl(@Stat.labels@);
+		} else {
+			@Stats.relevant@ = false;
+		}
 	}
 	@code @revorder(1) {
 		printl(@Stat.labels@ + 1);
@@ -134,11 +149,28 @@ Stat	:	T_RETURN Expr
 	@i @Else.hook@ = @Stat.labels@;
 	@i @Else.labels@ = @Stats.labels_out@;
 	@i @Stat.labels_out@ = @Else.labels_out@;
+	@i @Else.jump@ = true;
 
 	@code {
-		label = @Stat.labels@;
-		burm_invoke(@Bool.node@);
-		printi("jmp L%ld", @Stat.labels@ + 1);
+		if (@Stat.relevant@) {
+			label = @Stat.labels@;
+			burm_invoke(@Bool.node@);
+			if (!@Bool.node@->is_imm) {
+				printi("jmp L%ld", @Stat.labels@ + 1);
+			} else if (@Bool.node@->value) {
+				printf("# if condition is always true\n");
+				@Else.relevant@ = false;
+				@Else.jump@ = false;
+			} else {
+				printf("# if condition is always false\n");
+				@Stats.relevant@ = false;
+				@Else.jump@ = false;
+			}
+		} else {
+			@Else.relevant@ = false;
+			@Else.jump@ = false;
+			@Stats.relevant@ = false;
+		}
 		printl(@Stat.labels@);
 	}
 	@code @revorder(1) {
@@ -152,14 +184,27 @@ Stat	:	T_RETURN Expr
 	@i @Stat.labels_out@ = @Stats.labels_out@;
 
 	@code {
-		printl(@Stat.labels@);
-		label = @Stat.labels@ + 1;
-		burm_invoke(@Bool.node@);
-		printi("jmp L%ld", @Stat.labels@ + 2);
+		@Stats.relevant@ = @Stat.relevant@;
+		if (@Stat.relevant@) {
+			printl(@Stat.labels@);
+			label = @Stat.labels@ + 1;
+			burm_invoke(@Bool.node@);
+			if (@Bool.node@->is_imm) {
+				if (@Bool.node@->value) {
+					printf("# warning: infinite loop detected\n");
+				} else {
+					@Stats.relevant@ = false;
+				}
+			} else {
+				printi("jmp L%ld", @Stat.labels@ + 2);
+			}
+		}
 		printl(@Stat.labels@ + 1);
 	}
 	@code @revorder(1) {
-		printi("jmp L%ld", @Stat.labels@);
+		if (@Stat.relevant@ && @Stats.relevant@) {
+			printi("jmp L%ld", @Stat.labels@);
+		}
 		printl(@Stat.labels@ + 2);
 	}
 @}
@@ -173,8 +218,18 @@ Stat	:	T_RETURN Expr
 	@i @Stat.out@ = symbol_table_add_var(symbol_table_clone(@Stat.sym@), @Vardef.value@, @Vardef.dimensions@, false);
 	@i @Stat.labels_out@ = @Stat.labels@;
 
-	@code burm_invoke(@Expr.node@);
 	@assert same_dimensions(@Vardef.dimensions@, @Expr.dimensions@);
+
+	@code {
+		if (@Stat.relevant@) {
+			burm_invoke(@Expr.node@);
+			if (@Expr.node@->is_imm) {
+				printi("movq $%li, %%%s", @Expr.node@->value, symbol_table_get(@Stat.out@, @Vardef.value@)->reg);
+			} else {
+				printi("movq %%%s, %%%s", @Expr.node@->reg, symbol_table_get(@Stat.out@, @Vardef.value@)->reg);
+			}
+		}
+	}
 @}
 	|	Lexpr T_ASSIGN Expr
 @{
@@ -184,13 +239,15 @@ Stat	:	T_RETURN Expr
 	@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 
 	@code {
-		burm_invoke(@Lexpr.node@);
-		burm_invoke(@Expr.node@);
+		if (@Stat.relevant@) {
+			burm_invoke(@Lexpr.node@);
+			burm_invoke(@Expr.node@);
 
-		if (@Expr.node@->is_imm) {
-			printi("movq $%li, %%%s", @Expr.node@->value, @Lexpr.node@->reg);
-		} else {
-			printi("movq %%%s, %%%s", @Expr.node@->reg, @Lexpr.node@->reg);
+			if (@Expr.node@->is_imm) {
+				printi("movq $%li, %%%s", @Expr.node@->value, @Lexpr.node@->reg);
+			} else {
+				printi("movq %%%s, %%%s", @Expr.node@->reg, @Lexpr.node@->reg);
+			}
 		}
 	}
 @}
@@ -199,6 +256,7 @@ Funcdef	:	T_ID '(' Pars ')' Stats T_END
 @{
 	@e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); reg_reset();
 	@i @Stats.labels@ = 0;
+	@i @Stats.relevant@ = true;
 
 	@code funcdef(@T_ID.value@, @Pars.sym@);
 @}
@@ -206,6 +264,7 @@ Funcdef	:	T_ID '(' Pars ')' Stats T_END
 @{
 	@i @Stats.sym@ = NULL; reg_reset();
 	@i @Stats.labels@ = 0;
+	@i @Stats.relevant@ = true;
 
 	@code funcdef(@T_ID.value@, NULL);
 @}
@@ -218,6 +277,11 @@ Stats	:	Stat ';' Stats
 	@i @Stats.1.sym@ = @Stat.out@;
 	@i @Stats.1.labels@ = @Stat.labels_out@;
 	@i @Stats.0.labels_out@ = @Stats.1.labels_out@;
+
+	@code {
+		@Stat.relevant@ = @Stats.0.relevant@;
+		@Stats.1.relevant@ = @Stats.0.relevant@;
+	}
 @}
 	|
 @{

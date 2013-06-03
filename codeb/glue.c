@@ -44,11 +44,55 @@ void funcdef(char *name, symbol_table *table) {
 	return;
 }
 
+char *gen_mul(ast_node *bnode) {
+	if (bnode->left->is_imm) {
+		if (bnode->left->value == 1) {
+			return bnode->right->reg;
+		}
+		else {
+			if (!is_par(bnode->right->reg)) {
+				printi("imulq $%ld, %%%s", bnode->left->value, bnode->right->reg);
+				return bnode->right->reg;
+			}
+			else {
+				char *reg = reg_new_var();
+				printi("movq %%%s, %%%s", bnode->right->reg, reg);
+				printi("imulq $%ld, %%%s", bnode->left->value, reg);
+				return reg;
+			}
+		}
+	}
+	else if (bnode->right->is_imm) {
+		if (bnode->right->value == 1) {
+			return bnode->left->reg;
+		}
+		else {
+			if (!is_par(bnode->left->reg)) {
+				printi("imulq $%ld, %%%s", bnode->right->value, bnode->left->reg);
+				return bnode->left->reg;
+			}
+			else {
+				char *reg = reg_new_var();
+				printi("movq %%%s, %%%s", bnode->left->reg, reg);
+				printi("imulq $%ld, %%%s", bnode->right->value, reg);
+				return reg;
+			}
+		}
+	}
+	else {
+		return binary("imulq", bnode->left->reg, bnode->right->reg, true);
+	}
+}
+
 char *gen_add(ast_node *bnode) {
 	if (bnode->left->is_imm) {
 		if (bnode->left->value == 0) {
 			return bnode->right->reg;
 		}
+/*		else if (bnode->left->value == 1) {
+			printi("incq %%%s", bnode->right->reg);
+			return bnode->right->reg;
+		} */
 		else {
 			if (!is_par(bnode->right->reg)) {
 				printi("addq $%ld, %%%s", bnode->left->value, bnode->right->reg);
@@ -66,11 +110,12 @@ char *gen_add(ast_node *bnode) {
 		if (bnode->right->value == 0) {
 			return bnode->left->reg;
 		}
+/*		else if (bnode->right->value == 1) {
+			printi("incq %%%s", bnode->left->reg);
+			return bnode->left->reg;
+		} */
 		else {
 			if (!is_par(bnode->left->reg)) {
-#ifdef DEBUG
-				printf("# right is imm, left is var:\n");
-#endif
 				printi("addq $%ld, %%%s", bnode->right->value, bnode->left->reg);
 				return bnode->left->reg;
 			}
@@ -83,7 +128,6 @@ char *gen_add(ast_node *bnode) {
 		}
 	}
 	else {
-		printi("# fallback");
 		return binary("addq", bnode->left->reg, bnode->right->reg, true);
 	}
 }
@@ -103,6 +147,10 @@ char *gen_sub(ast_node *bnode) {
 		if (bnode->right->value == 0) {
 			return bnode->left->reg;
 		}
+/*		else if (bnode->right->value == 1) {
+			printi("decq %%%s", bnode->left->reg);
+			return bnode->left->reg;
+		} */
 		else {
 			if (!is_par(bnode->left->reg)) {
 				printi("subq $%ld, %%%s", bnode->right->value, bnode->left->reg);

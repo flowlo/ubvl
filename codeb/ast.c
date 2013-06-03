@@ -59,7 +59,6 @@ void node_print(ast_node *node, int indent) {
 	switch (node->op) {
 		case O_ID:	printf("%s", node->name);	break;
 		case O_NUM:	printf("%ld", node->value);	break;
-		case O_VARDEF:	printf("%s", node->name);	break;
 	}
 	printf("\n");
 	node_print(node->left, indent + 8);

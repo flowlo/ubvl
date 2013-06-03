@@ -9,19 +9,10 @@
 #include "ast.h"
 #include "glue.h"
 #endif
-
-/*
-This can be recycled in the grammar, I think.
-
-stat:	O_VARDEF(expr)		# 1 # printi("movq %%%s, %%%s", bnode->left->reg, bnode->reg);
-stat:	O_VARDEF(imm)		# 0 # printi("movq $%li, %%%s", bnode->left->value, bnode->reg);
-stat:	O_ASSIGN(O_ID, expr)	# 1 # printi("movq %%%s, %%%s", bnode->right->reg, bnode->left->reg);
-stat:	O_ASSIGN(O_ID, imm)	# 0 # printi("movq $%li, %%%s", bnode->right->value, bnode->left->reg);
-*/
 %}
 
 %start start
-%term O_NEQ=0 O_LT=1 O_ADD=2 O_MUL=3 O_SUB=4 O_ID=5 O_NUM=6 O_RETURN=7 O_ASSIGN=8 O_IF=9 O_WHILE=10 O_STATS=11 O_ELSE=12 O_ARRAY=13 O_OR=14 O_NOT=15 O_ARG=16 O_VARDEF=17
+%term O_NEQ=0 O_LT=1 O_ADD=2 O_MUL=3 O_SUB=4 O_ID=5 O_NUM=6 O_ARRAY=7 O_OR=8 O_NOT=9 O_ARG=10
 
 %%
 start:	bool
@@ -37,7 +28,7 @@ expr:	O_ADD(expr, imm)	# 2 # bnode->reg = gen_add(bnode);
 expr:	O_SUB(term, expr)	# 4 # bnode->reg = gen_sub(bnode);
 expr:	O_SUB(imm, expr)	# 2 # bnode->reg = gen_sub(bnode);
 expr:	O_SUB(term, imm)	# 2 # bnode->reg = gen_sub(bnode);
-expr:	O_MUL(term, expr)	# 4 # bnode->reg = binary("imulq", bnode->left->reg, bnode->right->reg, true);
+expr:	O_MUL(term, expr)	# 4 # bnode->reg = gen_mul(bnode);
 expr:	array			# 0 # printi("movq (%%%s), %%%s", bnode->reg, bnode->reg);
 
 array:	O_ARRAY(O_ID, expr)	# 3 # bnode->reg = reg_new_var(); printi("leaq (%%%s,%%%s,8), %%%s", bnode->left->reg, bnode->right->reg, bnode->reg);
@@ -51,13 +42,15 @@ term:	expr			# 0
 bool:	O_OR(bool, bterm)	# 0
 bool:	bterm			# 0
 
-bterm:	O_NOT(bterm)		# 0 # printi("not %%%s", bnode->reg);
-bterm:	O_NEQ(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->left->reg, bnode->right->reg); printi("jne L%ld", label);
-bterm:	O_LT(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->left->reg, bnode->right->reg); printi("jl L%ld", label);
+bterm:	O_NOT(O_NOT(bterm))	# 0 #
+bterm:	O_NEQ(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->right->reg, bnode->left->reg); printi("jne L%ld", label);
+bterm:	O_NOT(O_NEQ(expr, expr))# 0 # printi("cmp %%%s, %%%s", bnode->left->right->reg, bnode->left->left->reg); printi("je L%ld", label);
+bterm:	O_LT(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->right->reg, bnode->left->reg); printi("jl L%ld", label);
+bterm:	O_NOT(O_LT(expr, expr))	# 0 # printi("cmp %%%s, %%%s", bnode->left->right->reg, bnode->left->left->reg); printi("jge L%ld", label);
 
 imm:	O_NUM			# 0 # bnode->is_imm = true;
 imm:	O_ADD(imm, imm)		# 0 # bnode->value = bnode->left->value + bnode->right->value; bnode->is_imm = true;
 imm:	O_SUB(imm, imm)		# 0 # bnode->value = bnode->left->value - bnode->right->value; bnode->is_imm = true;
 imm:	O_MUL(imm, imm)		# 0 # bnode->value = bnode->left->value * bnode->right->value; bnode->is_imm = true;
 imm:	O_LT(imm, imm)		# 0 # bnode->value = bnode->left->value < bnode->right->value; bnode->is_imm = true;
-imm:	O_NEQ(imm, imm)		# 0 # bnode->value = bnode->left->value != bnode->right->value; bnode->is_imm = true;
+imm:	O_NEQ(imm, imm)		# 0 # bnode->value = (bnode->left->value != bnode->right->value); bnode->is_imm = true;

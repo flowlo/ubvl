@@ -10,6 +10,7 @@
 void funcdef(char *name, symbol_table *table);
 char *gen_add(ast_node *bnode);
 char *gen_sub(ast_node *bnode);
+char *gen_mul(ast_node *bnode);
 char *binary(char *op, char *first, char *second, bool commutative);
 char *reg_new_var(void);
 char *reg_new_par(void);
