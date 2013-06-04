@@ -22,7 +22,7 @@ void reg_free(char *reg);
 void reg_reset();
 void reg_usage_print();
 
-extern int label;
+extern unsigned long label;
 
 extern void burm_reduce(NODEPTR_TYPE bnode, int goalnt);
 extern STATEPTR_TYPE burm_label(NODEPTR_TYPE p);

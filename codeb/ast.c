@@ -9,8 +9,6 @@ const char *op_name[] = {
 	FOREACH(GENERATE_STRING)
 };
 
-unsigned long label = 0;
-
 ast_node *node_new(int op, ast_node *left, ast_node *right) {
 	ast_node *result = malloc(sizeof(ast_node));
 	result->op = op;

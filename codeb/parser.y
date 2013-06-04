@@ -16,7 +16,6 @@
 #define YYERROR_VERBOSE
 
 extern int yylineno;
-extern int label;
 extern int yyerror(const char*);
 extern int yylex(void);
 %}
