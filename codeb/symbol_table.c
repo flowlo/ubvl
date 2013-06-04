@@ -10,7 +10,7 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 		return NULL;
 
 	#ifdef DEBUG
-	printf("Cloning table:\n");
+	printf("# cloning table:\n");
 	symbol_table_print(table);
 	#endif
 
@@ -65,7 +65,7 @@ symbol_table *symbol_table_add_with_reg(symbol_table *table, char *id, symbol_di
 	}
 
 	#ifdef DEBUG
-	printf("Added symbol '%s' with register '%s'.\n", id, reg);
+	printf("# added symbol '%s' with register '%s'.\n", id, reg);
 	print_var_usage();
 	#endif
 
@@ -169,18 +169,18 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 
 void symbol_table_print(symbol_table *table) {
 	if (table == NULL) {
-		printf("No symbols available.\n");
+		printf("# no symbols available.\n");
 		return;
 	}
 
-	fprintf(stderr, "Available symbols:\n");
+	fprintf(stderr, "# available symbols:\n");
 
 	symbol_table *i = table;
 	do {
 		if (i->dimensions)
-			fprintf(stderr, "%p\t%s\t%d-dimensional array\n", i, i->id, i->dimensions);
+			fprintf(stderr, "# %p\t%s\t%d-dimensional array\n", i, i->id, i->dimensions);
 		else
-			fprintf(stderr, "%p\t%s\tinteger\n", i, i->id);
+			fprintf(stderr, "# %p\t%s\tinteger\n", i, i->id);
 	} while ((i = i->next) != NULL);
 }
 
@@ -207,15 +207,15 @@ void variable_exists(symbol_table *table, char *id) {
 		exit(3);
 	}
 
-	printf("Identified '%s' as %p in register '%s'.\n", id, element, element->reg);
+	printf("# identified '%s' as %p in register '%s'.\n", id, element, element->reg);
 }
 
 void same_dimensions(symbol_dimensions a, symbol_dimensions b) {
 	if (a != b) {
-		fprintf(stderr, "Dimension mismatch (%d != %d).\n", a, b);
+		fprintf(stderr, "# dimension mismatch (%d != %d).\n", a, b);
 		exit(3);
 	}
 #ifdef DEBUG
-	printf("Successfull dimension match (%d == %d).\n", a, b);
+	printf("# successfull dimension match (%d == %d).\n", a, b);
 #endif
 }
