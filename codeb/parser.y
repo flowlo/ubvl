@@ -25,16 +25,47 @@ extern int yylex(void);
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
 %start Program
 
-@attributes { int value; }													T_NUM
-@attributes { char *value; }													T_ID
-@attributes { symbol_table *sym; }												Pars
-@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; }								Args Bterm Bool
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; @autoinh bool relevant; }				Stats
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; @autoinh bool relevant; @autoinh int hook; bool jump; }	Else
-@attributes { @autoinh symbol_table *sym; @autoinh int labels; int labels_out; @autoinh bool relevant; symbol_table *out; }	Stat
-@attributes { symbol_dimensions dimensions; }											Type
-@attributes { @autosyn char* value; @autosyn symbol_dimensions dimensions; }							Vardef
-@attributes { @autoinh symbol_table *sym; @autosyn ast_node *node; @autosyn symbol_dimensions dimensions; }			Expr Term Lexpr Add Sub Mul
+@autoinh labels relevant
+@autosyn node dimensions labels_out
+
+@attributes { int value; } T_NUM
+@attributes { char *value; } T_ID
+@attributes { symbol_table *sym; } Pars
+@attributes { symbol_dimensions dimensions; } Type
+@attributes {
+	@autoinh symbol_table *sym;
+	ast_node *node;
+} Args Bterm Bool
+@attributes {
+	@autoinh symbol_table *sym;
+	int labels;
+	int labels_out;
+	bool relevant;
+} Stats
+@attributes {
+	@autoinh symbol_table *sym;
+	int labels;
+	int labels_out;
+	bool relevant;
+	int hook;
+	bool jump;
+} Else
+@attributes {
+	@autoinh symbol_table *sym;
+	int labels;
+	int labels_out;
+	bool relevant;
+	symbol_table *out;
+} Stat
+@attributes {
+	@autosyn char* value;
+	symbol_dimensions dimensions;
+} Vardef
+@attributes {
+	@autoinh symbol_table *sym;
+	ast_node *node;
+	symbol_dimensions dimensions;
+} Expr Term Lexpr Add Sub Mul
 
 @traversal @preorder assert
 @traversal @preorder code
@@ -60,7 +91,7 @@ extern int yylex(void);
 Program	:	Program Funcdef ';' | ;
 Vardef	:	T_ID ':' Type
 	;
-Args	:	Expr 						@{ @i @Args.node@ = node_new(O_ARG, @Expr.node@, NULL); @}
+Args	:	Expr						@{ @i @Args.node@ = node_new(O_ARG, @Expr.node@, NULL); @}
 	|	Args ',' Expr					@{ @i @Args.0.node@ = node_new(O_ARG, @Expr.node@, @Args.1.node@); @}
 	;
 Bool	:	Bterm | Bool T_OR Bterm				@{ @i @Bool.0.node@ = node_new(O_OR, @Bool.1.node@, @Bterm.node@); @}
@@ -87,9 +118,6 @@ Mul     :       Term '*' Term
         ;
 Else	:	Stats T_END
 @{
-	@i @Stats.labels@ = @Else.labels@;
-	@i @Else.labels_out@ = @Stats.labels_out@;
-
 	@code {
 		@Stats.relevant@ = @Else.relevant@;
 		if (@Else.jump@) {
@@ -120,7 +148,6 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stats.labels@ = @Stat.labels@ + 2;
-	@i @Stat.labels_out@ = @Stats.labels_out@;
 
 	@code {
 		if (@Stat.relevant@) {
@@ -184,7 +211,6 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stats.labels@ = @Stat.labels@ + 3;
-	@i @Stat.labels_out@ = @Stats.labels_out@;
 
 	@code {
 		@Stats.relevant@ = @Stat.relevant@;
