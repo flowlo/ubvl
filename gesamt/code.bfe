@@ -1,0 +1,73 @@
+%{
+#ifndef CODE_BFE
+#define CODE_BFE
+#pragma GCC diagnostic ignored "-Wformat"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+#include "ast.h"
+#include "glue.h"
+#endif
+%}
+
+%start start
+%term O_NEQ=0 O_LT=1 O_ADD=2 O_MUL=3 O_SUB=4 O_ID=5 O_NUM=6 O_ARRAY=7 O_OR=8 O_NOT=9 O_ARG=10 O_LEXPR=11
+
+%%
+start:	bool
+start:	expr
+start:	term
+start:	imm
+start:	lexpr
+
+lexpr:	O_LEXPR(array, expr)	# 0 # printi("movq %%%s, (%%%s)", bnode->right->reg, bnode->left->reg);
+lexpr:	O_LEXPR(array, imm)	# 0 # printi("movq $%ld, (%%%s)", bnode->right->value, bnode->left->reg);
+lexpr:	O_LEXPR(O_ID, expr)	# 0 # printi("movq %%%s, %%%s", bnode->right->reg, bnode->left->reg);
+lexpr:	O_LEXPR(O_ID, imm)	# 0 # if (bnode->right->value == 0) { printi("xor %%%s, %%%s", bnode->left->reg, bnode->left->reg); } else { printi("movq $%ld, %%%s", bnode->right->value, bnode->left->reg); }
+lexpr:	O_LEXPR(O_ID, O_ADD(O_ID, imm)) # 0 # if (bnode->right->right->value == 1 && strcmp(bnode->left->name, bnode->right->left->name) == 0) { printi("incq %%%s", bnode->left->reg); } else { printi("leaq %ld (%%%s), %%%s", bnode->right->right->value, bnode->right->left->reg, bnode->left->reg); }
+lexpr:	O_LEXPR(O_ID, O_SUB(O_ID, imm)) # 0 # if (bnode->right->right->value == 1 && strcmp(bnode->left->name, bnode->right->left->name) == 0) { printi("decq %%%s", bnode->left->reg); } else { printi("leaq %ld (%%%s), %%%s", -bnode->right->right->value, bnode->right->left->reg, bnode->left->reg); }
+lexpr:	O_LEXPR(O_ID, O_SUB(imm, O_ID)) # 0 # if (bnode->right->left->value == 0 && strcmp(bnode->left->name, bnode->right->right->name) == 0) { printi("negq %%%s", bnode->left->reg); } else { printi("subq $%ld, %%%s", -bnode->right->left->value, bnode->right->right->reg); }
+
+expr:	imm			# 100 # printi("movq $%i, %%%s", bnode->value, bnode->reg = reg_new_var()); printf("%c code.bfe (expr: imm) allocated %s\n", 35, bnode->reg);
+expr:	O_ID			# 0
+expr:	O_ADD(term, expr)	# 4 # bnode->reg = gen_add(bnode);
+expr:	O_ADD(imm, expr)	# 2 # bnode->reg = gen_add(bnode);
+expr:	O_ADD(expr, imm)	# 2 # bnode->reg = gen_add(bnode);
+expr:	O_SUB(term, expr)	# 4 # bnode->reg = gen_sub(bnode);
+expr:	O_SUB(imm, expr)	# 2 # bnode->reg = gen_sub(bnode);
+expr:	O_SUB(term, imm)	# 2 # bnode->reg = gen_sub(bnode);
+expr:	O_MUL(term, expr)	# 4 # bnode->reg = gen_mul(bnode);
+expr:	array			# 0 # printi("movq (%%%s), %%%s", bnode->reg, bnode->reg);
+
+array:	O_ARRAY(O_ID, expr)	# 3 # bnode->reg = reg_new_var(); printi("leaq (%%%s,%%%s,8), %%%s", bnode->left->reg, bnode->right->reg, bnode->reg); printf("%c code.bfe (array: O_ARRAY(O_ID, expr))) allocated %s\n", 35, bnode->reg);
+array:	O_ARRAY(array, imm)	# 2 # bnode->reg = bnode->left->reg; printi("movq (%%%s), %%%s", bnode->reg, bnode->reg); printi("leaq %li (%%%s), %%%s", bnode->right->value * 8, bnode->left->reg, bnode->reg); 
+array:	O_ARRAY(array, expr)	# 3 # bnode->reg = bnode->left->reg; printi("movq (%%%s), %%%s", bnode->reg, bnode->reg); printi("leaq (%%%s,%%%s,8), %%%s", bnode->left->reg, bnode->right->reg, bnode->reg); 
+
+term:	imm			# 100 # printi("movq $%i, %%%s", bnode->value, bnode->reg = reg_new_var()); printf("%c code.bfe (term: imm) allocated %s\n", 35, bnode->reg);
+term:	O_ID			# 0
+term:	expr			# 0
+
+bool:	O_OR(bool, bterm)	# 0
+bool:	bterm			# 0
+
+bterm:	O_NOT(O_NOT(bterm))	# 0 #
+bterm:	O_NEQ(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->right->reg, bnode->left->reg); printi("jne L%ld", label);
+bterm:	O_NEQ(expr, imm)	# 0 # printi("cmp $%ld, %%%s", bnode->right->value, bnode->left->reg); printi("jne L%ld", label);
+bterm:	O_NEQ(imm, expr)	# 0 # printi("cmp $%ld, %%%s", bnode->left->value, bnode->right->reg); printi("jne L%ld", label);
+bterm:	O_NOT(O_NEQ(expr, expr))# 0 # printi("cmp %%%s, %%%s", bnode->left->right->reg, bnode->left->left->reg); printi("je L%ld", label);
+bterm:	O_NOT(O_NEQ(expr, imm))	# 0 # printi("cmp $%ld, %%%s", bnode->left->right->value, bnode->left->left->reg); printi("je L%ld", label);
+bterm:	O_NOT(O_NEQ(imm, expr))	# 0 # printi("cmp $%ld, %%%s", bnode->left->left->value, bnode->left->right->reg); printi("je L%ld", label);
+bterm:	O_LT(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->right->reg, bnode->left->reg); printi("jl L%ld", label);
+bterm:	O_LT(expr, imm)		# 0 # printi("cmp $%ld, %%%s", bnode->right->value, bnode->left->reg); printi("jl L%ld", label);
+bterm:	O_LT(imm, expr)		# 0 # printi("cmp $%ld, %%%s", bnode->left->value, bnode->right->reg); printi("jg L%ld", label);
+bterm:	O_NOT(O_LT(expr, expr))	# 0 # printi("cmp %%%s, %%%s", bnode->left->right->reg, bnode->left->left->reg); printi("jge L%ld", label);
+bterm:	O_NOT(O_LT(expr, imm))	# 0 # printi("cmp $%ld, %%%s", bnode->left->right->value, bnode->left->left->reg); printi("jge L%ld", label);
+bterm:	O_NOT(O_LT(imm, expr))	# 0 # printi("cmp $%ld, %%%s", bnode->left->left->value, bnode->left->right->reg); printi("jle L%ld", label);
+
+imm:	O_NUM			# 0 # bnode->is_imm = true;
+imm:	O_ADD(imm, imm)		# 0 # bnode->value = bnode->left->value + bnode->right->value; bnode->is_imm = true;
+imm:	O_SUB(imm, imm)		# 0 # bnode->value = bnode->left->value - bnode->right->value; bnode->is_imm = true;
+imm:	O_MUL(imm, imm)		# 0 # bnode->value = bnode->left->value * bnode->right->value; bnode->is_imm = true;
+imm:	O_LT(imm, imm)		# 0 # bnode->value = bnode->left->value < bnode->right->value; bnode->is_imm = true;
+imm:	O_NEQ(imm, imm)		# 0 # bnode->value = (bnode->left->value != bnode->right->value); bnode->is_imm = true;
