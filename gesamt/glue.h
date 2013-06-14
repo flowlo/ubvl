@@ -5,7 +5,7 @@
 
 #define printi(...) putchar('\t'); printf(__VA_ARGS__); putchar('\n');
 #define printl(label) printf("L%ld:\n", label);
-#define burm_invoke(root) /* printf("# burm_invoke\n"); node_print(root, 0); */ burm_label(root); burm_reduce(root, 1);
+#define burm_invoke(root) root = compress(root); if(print_trees) { node_print(root, 0); } burm_label(root); burm_reduce(root, 1);
 
 //reg_free_recursive(root->left); reg_free_recursive(root->right);
 
@@ -22,6 +22,7 @@ void reg_free(char *reg);
 void reg_reset();
 void reg_usage_print();
 
+extern bool print_trees;
 extern unsigned long label;
 
 extern void burm_reduce(NODEPTR_TYPE bnode, int goalnt);

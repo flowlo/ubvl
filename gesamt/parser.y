@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include "symbol_table.h"
 #include "ast.h"
 #include "glue.h"
@@ -102,19 +103,108 @@ Bterm	:	'(' Bool ')'
 	|	Expr '<' Expr					@{ boolean(O_LT,) @}
 	;
 Expr    :       Term | Add | Sub | Mul ;
-Add     :       Term '+' Term                                   @{ arithmetic(Add,O_ADD,) @}
-        |       Add '+' Term                                    @{ arithmeticRecursive(Add,O_ADD,) @}
-        ;
-Sub     :       Term '-' Term                                   @{ arithmetic(Sub,O_SUB,) @}
-        |       Sub '-' Term                                    @{ arithmeticRecursive(Sub,O_SUB,) @}
-        ;
-Mul     :       Term '*' Term
+Add     :       Term '+' Term
 @{
-	@i @Mul.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
-	@i @Mul.0.node@ = ((@Term.0.node@->is_imm && @Term.0.node@->value == 0) || (@Term.1.node@->is_imm && @Term.1.node@->value == 0)) ? node_new_num(0) :  node_new(O_MUL, @Term.0.node@, @Term.1.node@);
+	@i @Add.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	@e Add.node : Term.node Term.1.node ; if (@Term.node@->is_imm && @Term.1.node@->is_imm) { @Add.node@ = node_new_num(@Term.node@->value + @Term.1.node@->value); } else if (!@Term.node@->is_imm) { @Add.node@ = node_new(O_ADD, @Term.0.node@, @Term.1.node@); } else { @Add.node@ = node_new(O_ADD, @Term.1.node@, @Term.0.node@); }
 	@assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
 @}
-        |       Mul '*' Term                                    @{ arithmeticRecursive(Mul,O_MUL,) @}
+        |       Add '+' Term
+@{
+	@i @Add.0.dimensions@ = @Add.1.dimensions@ + @Term.dimensions@;
+	@e Add.node : Add.1.node Term.node ; if (@Add.1.node@->is_imm && @Term.node@->is_imm) { @Add.0.node@ = node_new_num(@Add.1.node@->value + @Term.node@->value); } else if (!@Add.1.node@->is_imm) { @Add.0.node@ = node_new(O_ADD, @Add.1.node@, @Term.node@); } else { @Add.node@ = node_new(O_ADD, @Term.node@, @Add.1.node@); }
+	@assert is_integer(@Add.1.dimensions@); is_integer(@Term.dimensions@);
+@}
+        ;
+Sub     :       Term '-' Term
+@{
+	@i @Sub.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	@i {
+		@Sub.0.node@ =
+			(@Term.0.node@->is_imm && @Term.1.node@->is_imm)
+			?
+				node_new_num(@Term.0.node@->value - @Term.1.node@->value)
+			:
+				(@Term.1.node@->is_imm && @Term.1.node@->value == 0)
+				?
+					@Term.0.node@
+				:
+				node_new(O_SUB, @Term.0.node@, @Term.1.node@);
+	}
+	@assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
+@}
+	|	Sub '-' Term
+@{
+        @i @Sub.dimensions@ = @Sub.1.dimensions@ + @Term.dimensions@;
+        @i {
+                @Sub.0.node@ =
+			(@Sub.1.node@->is_imm && @Term.node@->is_imm)
+			?
+				node_new_num(@Sub.1.node@->value - @Term.node@->value)
+			:
+				(@Term.node@->is_imm && @Term.node@->value == 1)
+				?
+					@Sub.1.node@
+				:
+					(@Term.0.node@->is_imm && @Term.0.node@->value == 0)
+					?
+						@Sub.1.node@
+					:
+					node_new(O_SUB, @Sub.1.node@, @Term.node@);
+        }
+        @assert is_integer(@Term.0.dimensions@); is_integer(@Sub.1.dimensions@);
+@}
+        ;
+Mul	:	Term '*' Term
+@{
+	@i @Mul.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	@i {
+		@Mul.0.node@ =
+			(@Term.0.node@->is_imm && @Term.1.node@->is_imm)
+			?
+				node_new_num(@Term.0.node@->value * @Term.1.node@->value)
+			:
+				(@Term.0.node@->is_imm && @Term.0.node@->value == 1)
+				?
+					@Term.1.node@
+				:
+					(@Term.1.node@->is_imm && @Term.1.node@->value == 1)
+					?
+						@Term.0.node@
+					:
+						(@Term.0.node@->is_imm)
+						?
+							node_new(O_MUL, @Term.1.node@, @Term.0.node@)
+						:
+							node_new(O_MUL, @Term.0.node@, @Term.1.node@);
+	}
+	@assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
+@}
+        |       Mul '*' Term
+@{
+        @i @Mul.dimensions@ = @Mul.1.dimensions@ + @Term.dimensions@;
+        @i {
+                @Mul.0.node@ =
+			(@Mul.1.node@->is_imm && @Term.node@->is_imm)
+			?
+				node_new_num(@Mul.1.node@->value * @Term.node@->value)
+			:
+				(@Mul.1.node@->is_imm && @Mul.1.node@->value == 1)
+				?
+					@Term.node@
+				:
+					(@Term.0.node@->is_imm && @Term.0.node@->value == 1)
+					?
+						@Mul.1.node@
+					:
+						(@Mul.1.node@->is_imm)
+						?
+							node_new(O_MUL, @Term.node@, @Mul.1.node@)
+						:
+							node_new(O_MUL, @Mul.1.node@, @Term.node@);
+        }
+        @assert is_integer(@Term.0.dimensions@); is_integer(@Mul.1.dimensions@);
+@}
         ;
 Else	:	Stats T_END
 @{
@@ -330,8 +420,14 @@ Lexpr	:	T_ID
 @}
 	;
 Term	:	'(' Expr ')'
-	|	T_ID '(' Args ')' ':' Type			@{ @i @Term.node@ = node_new_call(@T_ID.value@, @Args.node@); @}
-	|	T_ID '(' ')' ':' Type				@{ @i @Term.node@ = node_new_call(@T_ID.value@, NULL); @}
+	|	T_ID '(' Args ')' ':' Type
+@{
+	@i @Term.node@ = node_new_call(@T_ID.value@, @Args.node@);
+@}
+	|	T_ID '(' ')' ':' Type
+@{
+	@i @Term.node@ = node_new_call(@T_ID.value@, NULL);
+@}
 	|	T_NUM						@{ @i @Term.dimensions@ = 0; @i @Term.node@ = node_new_num(@T_NUM.value@); @}
 	|	Term '[' Expr ']'
 @{
@@ -354,5 +450,14 @@ int yyerror(const char *e) {
 }
 
 int main(int argc, char **argv) {
+	char c = '\0';
+	while ((c = getopt (argc, argv, "a")) != -1)
+		switch (c) {
+			case 'a':
+				print_trees = true;
+				printf("# printing trees for expressions \n");
+			break;
+		}
+
 	return yyparse();
 }

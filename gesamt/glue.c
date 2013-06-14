@@ -5,11 +5,65 @@
 #include "glue.h"
 
 unsigned long label = 0;
+bool print_trees = false;
 
 char vars[9][4]= { "rax", "r10", "r11", "r9", "r8", "rcx", "rdx", "rsi", "rdi" };
 char pars[6][4]= { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 static int var_usage[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 int par_usage[6] = { 0, 0, 0, 0, 0, 0 };
+
+ast_node* compress(ast_node *root) {
+	if (root == NULL) {
+		return NULL;
+	}
+
+	ast_node *cp = root;
+	int tmp = 0;
+
+	if (root->op == O_ADD || root->op == O_SUB) {
+		while (root->left != NULL) {
+			if ((root->left->op == O_ADD || root->left->op == O_SUB) && root->left->right->is_imm) {
+				tmp += root->left->op == O_ADD ? root->left->right->value : -root->left->right->value;
+				root->left = root->left->left;
+			} else {
+				root = root->left;
+			}
+		}
+		if (tmp != 0) {
+			if (cp->right->is_imm) {
+				cp->right->value += cp->op == O_ADD ? tmp : -tmp;
+				return cp;
+			} else {
+				return node_new(O_ADD, cp, node_new_num(tmp));
+			}
+		} else {
+			return cp;
+		}
+	} else if (root->op == O_MUL) {
+		tmp = 1;
+		while (root->left != NULL) {
+			if (root->left->op != O_MUL) {
+				break;
+			} else if (root->left->right->is_imm) {
+				tmp *= root->left->right->value;
+				root->left = root->left->left;
+			}
+			else {
+				root = root->left;
+			}
+		}
+		if (tmp != 1) {
+			if (cp->right->is_imm) {
+				cp->right->value *= tmp;
+				return cp;
+			} else {
+				return node_new(O_MUL, cp, node_new_num(tmp));
+			}
+		}
+	}
+
+	return root;
+}
 
 void print_var_usage() {
 	printf ("# ");
