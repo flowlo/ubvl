@@ -46,7 +46,11 @@ ast_node *node_new_id(char *name, symbol_table *table) {
 }
 
 ast_node *node_new_call(char *name, ast_node *args) {
-	return NULL;
+	ast_node *result = malloc(sizeof(ast_node));
+	result->op = O_CALL;
+	result->name = strdup(name);
+	result->is_imm = false;
+	return result;
 }
 
 void node_print(ast_node *node, int indent) {

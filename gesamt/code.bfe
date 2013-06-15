@@ -12,7 +12,7 @@
 %}
 
 %start start
-%term O_NEQ=0 O_LT=1 O_ADD=2 O_MUL=3 O_SUB=4 O_ID=5 O_NUM=6 O_ARRAY=7 O_OR=8 O_NOT=9 O_ARG=10 O_LEXPR=11
+%term O_NEQ=0 O_LT=1 O_ADD=2 O_MUL=3 O_SUB=4 O_ID=5 O_NUM=6 O_ARRAY=7 O_OR=8 O_NOT=9 O_ARG=10 O_LEXPR=11 O_CALL=12
 
 %%
 start:	bool
@@ -20,6 +20,9 @@ start:	expr
 start:	term
 start:	imm
 start:	lexpr
+start:	call
+
+call: O_CALL
 
 lexpr:	O_LEXPR(array, expr)	# 0 # printi("movq %%%s, (%%%s)", bnode->right->reg, bnode->left->reg);
 lexpr:	O_LEXPR(array, imm)	# 0 # printi("movq $%ld, (%%%s)", bnode->right->value, bnode->left->reg);
@@ -29,9 +32,13 @@ lexpr:	O_LEXPR(O_ID, imm)	# 1 # if (bnode->right->value == 0) { printi("xor %%%s
 lexpr:	O_LEXPR(O_ID, O_ADD(O_ID, imm)) # 1 # if (bnode->right->right->value == 1 && strcmp(bnode->left->name, bnode->right->left->name) == 0) { printi("incq %%%s", bnode->left->reg); } else { printi("leaq %ld (%%%s), %%%s", bnode->right->right->value, bnode->right->left->reg, bnode->left->reg); }
 lexpr:	O_LEXPR(O_ID, O_SUB(O_ID, imm)) # 1 # if (bnode->right->right->value == 1 && strcmp(bnode->left->name, bnode->right->left->name) == 0) { printi("decq %%%s", bnode->left->reg); } else { printi("leaq %ld (%%%s), %%%s", -bnode->right->right->value, bnode->right->left->reg, bnode->left->reg); }
 lexpr:	O_LEXPR(O_ID, O_SUB(imm, O_ID)) # 1 # if (bnode->right->left->value == 0 && strcmp(bnode->left->name, bnode->right->right->name) == 0) { printi("negq %%%s", bnode->left->reg); } else { printi("subq $%ld, %%%s", -bnode->right->left->value, bnode->right->right->reg); }
+lexpr:	O_LEXPR(O_ID, O_MUL(O_ID, imm)) # 1 # printi("imulq $%ld, %%%s", bnode->right->right->value, bnode->left->reg);
+lexpr:	O_LEXPR(O_ID, O_MUL(O_ID, expr)) # 1 # printi("imulq %%%s, %%%s", bnode->right->right->reg, bnode->left->reg);
 
 expr:	imm			# 100 # printi("movq $%i, %%%s", bnode->value, bnode->reg = reg_new_var()); printf("%c code.bfe (expr: imm) allocated %s\n", 35, bnode->reg);
 expr:	O_ID			# 0
+expr:	O_ADD(O_ADD(term, expr), O_NUM) # 1 # bnode->reg = gen_ladd(bnode);
+expr:	O_SUB(O_ADD(term, expr), O_NUM) # 1 # bnode->reg = gen_lsub(bnode);
 expr:	O_ADD(term, expr)	# 4 # bnode->reg = gen_add(bnode);
 expr:	O_ADD(imm, expr)	# 2 # bnode->reg = gen_add(bnode);
 expr:	O_ADD(expr, imm)	# 2 # bnode->reg = gen_add(bnode);
@@ -41,7 +48,7 @@ expr:	O_SUB(term, imm)	# 2 # bnode->reg = gen_sub(bnode);
 expr:	O_MUL(term, expr)	# 4 # bnode->reg = gen_mul(bnode);
 expr:	O_MUL(imm, expr)	# 2 # bnode->reg = gen_mul(bnode);
 expr:	O_MUL(term,imm)		# 2 # bnode->reg = gen_mul(bnode);
-expr:	array			# 0 # printi("movq (%%%s), %%%s", bnode->reg, bnode->reg);
+expr:	array			# 1 # printi("movq (%%%s), %%%s", bnode->reg, bnode->reg);
 
 array:	O_ARRAY(O_ID, expr)	# 3 # bnode->reg = reg_new_var(); printi("leaq (%%%s,%%%s,8), %%%s", bnode->left->reg, bnode->right->reg, bnode->reg); printf("%c code.bfe (array: O_ARRAY(O_ID, expr))) allocated %s\n", 35, bnode->reg);
 array:	O_ARRAY(array, imm)	# 2 # bnode->reg = bnode->left->reg; printi("movq (%%%s), %%%s", bnode->reg, bnode->reg); printi("leaq %li (%%%s), %%%s", bnode->right->value * 8, bnode->left->reg, bnode->reg); 

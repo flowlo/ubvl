@@ -423,10 +423,22 @@ Term	:	'(' Expr ')'
 	|	T_ID '(' Args ')' ':' Type
 @{
 	@i @Term.node@ = node_new_call(@T_ID.value@, @Args.node@);
+
+	@code {
+		printi("#save");
+		save();
+		printi("#/save");
+		printi("call %s", @T_ID.value@);
+	}
 @}
 	|	T_ID '(' ')' ':' Type
 @{
 	@i @Term.node@ = node_new_call(@T_ID.value@, NULL);
+
+	@code {
+		save();
+		printi("call %s", @T_ID.value@);
+	}
 @}
 	|	T_NUM						@{ @i @Term.dimensions@ = 0; @i @Term.node@ = node_new_num(@T_NUM.value@); @}
 	|	Term '[' Expr ']'

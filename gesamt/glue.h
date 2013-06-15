@@ -9,9 +9,12 @@
 
 //reg_free_recursive(root->left); reg_free_recursive(root->right);
 
+ast_node* compress(ast_node*);
 void funcdef(char *name, symbol_table *table);
 char *gen_add(ast_node *bnode);
+char *gen_ladd(ast_node *bnode);
 char *gen_sub(ast_node *bnode);
+char *gen_lsub(ast_node *bnode);
 char *gen_mul(ast_node *bnode);
 char *binary(char *op, ast_node *first, ast_node *second, bool commutative);
 char *reg_new_var(void);

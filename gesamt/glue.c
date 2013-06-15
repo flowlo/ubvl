@@ -4,6 +4,8 @@
 
 #include "glue.h"
 
+//#define DEBUG
+
 unsigned long label = 0;
 bool print_trees = false;
 
@@ -11,6 +13,16 @@ char vars[9][4]= { "rax", "r10", "r11", "r9", "r8", "rcx", "rdx", "rsi", "rdi" }
 char pars[6][4]= { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 static int var_usage[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 int par_usage[6] = { 0, 0, 0, 0, 0, 0 };
+
+void save() {
+	print_var_usage();
+	int i;
+	for (i = 0; i < 9; i++) {
+		if (var_usage[i] > 0) {
+			printi("pushq %%%s", vars[i]);
+		}
+	}
+}
 
 ast_node* compress(ast_node *root) {
 	if (root == NULL) {
@@ -97,6 +109,11 @@ void funcdef(char *name, symbol_table *table) {
 	symbol_table *element;
 	for (i = 5, element = table; i > -1 && element != NULL; i--, element = element->next) {
 		element->reg = strdup(pars[i]);
+		int j;
+		for (j = 0; j < 9; j++) {
+			if(strcmp(vars[j], pars[i]) == 0)
+				var_usage[j]++;
+		}
 	}
 
 	reg_usage_print();
@@ -223,8 +240,39 @@ char *gen_add(ast_node *bnode) {
 		}
 	}
 	else {
-		return binary("addq", bnode->left, bnode->right, true);
+//		printf("%d %d %d %d\n", !is_par(bnode->left->reg) ?0:1, bnode->left->name == NULL ?0:1, !is_par(bnode->right->reg) ?0:1, bnode->right->name == NULL?0:1);
+//		if ((!is_par(bnode->left->reg)) && (bnode->left->name == NULL) && (!is_par(bnode->right->reg)) && (bnode->right->name == NULL)) {
+//			char *reg = reg_new_var();
+//			printi("leaq (%%%s, %%%s), %%%s", bnode->left->reg, bnode->right->reg, reg);
+//			return reg;
+//		} else {
+			return binary("addq", bnode->left, bnode->right, true);
+//		}
 	}
+}
+
+char *gen_ladd(ast_node* bnode) {
+	char *reg;
+	if (!is_par(bnode->left->right->reg) && bnode->left->right->name == NULL) {
+		reg = bnode->left->right->reg;
+		printi("leaq %ld (%%%s, %%%s), %%%s", bnode->right->value, bnode->left->left->reg, bnode->left->right->reg, reg);
+	} else {
+		reg = reg_new_var();
+		printi("leaq %ld (%%%s, %%%s), %%%s", bnode->right->value, bnode->left->left->reg, bnode->left->right->reg, reg);
+	}
+	return reg;
+}
+
+char *gen_lsub(ast_node* bnode) {
+	char *reg;
+	if (!is_par(bnode->left->right->reg) && bnode->left->right->name == NULL) {
+		reg = bnode->left->right->reg;
+		printi("leaq %ld (%%%s, %%%s), %%%s", -bnode->right->value, bnode->left->left->reg, bnode->left->right->reg, reg);
+	} else {
+		reg = reg_new_var();
+		printi("leaq %ld (%%%s, %%%s), %%%s", -bnode->right->value, bnode->left->left->reg, bnode->left->right->reg, reg);
+	}
+	return reg;
 }
 
 char *gen_sub(ast_node *bnode) {
@@ -259,7 +307,7 @@ char *gen_sub(ast_node *bnode) {
 			}
 			else {
 				char* reg = reg_new_var();
-				printi("leaq %ld (%%%s), %%%s #bizz", -bnode->right->value, bnode->left->reg, reg);
+				printi("leaq %ld (%%%s), %%%s", -bnode->right->value, bnode->left->reg, reg);
 				return reg;
 			}
 		}
