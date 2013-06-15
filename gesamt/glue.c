@@ -26,13 +26,38 @@ void prepare_call(ast_node* args) {
 	printf("#PREPARING ARGS\n");
 	node_print(args, 0);
 #endif
+	ast_node *cp = args;
 	int num_args = 0;
 	while (args != NULL) {
+		num_args++;
 		if (args->op == O_ARG) {
-			printi("movq %%%s, %%%s", args->right->reg, pars[num_args++]);
+			if (is_par(args->right->reg)) {
+				char *reg = reg_new_var();
+				move(args->right->reg, reg);
+				args->right->reg = reg;
+			}
 			args = args->left;
 		} else {
-			printi("movq %%%s, %%%s", args->reg, pars[num_args++]);
+			if (is_par(args->reg)) {
+				char *reg = reg_new_var();
+				move(args->reg, reg);
+				args->reg = reg;
+
+			}
+			break;
+		}
+	}
+
+	args = cp;
+	int i = 1;
+	while (args != NULL) {
+		if (args->op == O_ARG) {
+			move(args->right->reg, pars[num_args - i++]);
+			reg_free(args->right->reg);
+			args = args->left;
+		} else {
+			move(args->reg, pars[num_args - i++]);
+			reg_free(args->reg);
 			break;
 		}
 	}
@@ -132,8 +157,10 @@ void reg_reset() {
 void funcdef(char *name, symbol_table *table, bool call) {
 	printf(".globl %1$s\n.type %1$s, @function\n%1$s:\n", name);
 
-	if ((need_stack = call))
+	if ((need_stack = call)) {
 		printf("# stack needed!\n");
+		printi("enter $100, $0");
+	}
 
 	if (table != NULL) {
 		printf("#");
