@@ -48,7 +48,9 @@ ast_node *node_new_id(char *name, symbol_table *table) {
 ast_node *node_new_call(char *name, ast_node *args) {
 	ast_node *result = malloc(sizeof(ast_node));
 	result->op = O_CALL;
+	result->left = args;
 	result->name = strdup(name);
+	result->reg = reg_new_var();
 	result->is_imm = false;
 	return result;
 }

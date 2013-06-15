@@ -24,24 +24,30 @@ extern int yylex(void);
 %left  '+'  '-'
 %left  '*'
 %token T_ID T_NUM T_END T_ARRAY T_OF T_INT T_RETURN T_IF T_THEN T_ELSE T_WHILE T_DO T_VAR T_NOT T_OR T_ASSIGN
-%start Program
+%start Dummy
 
 @autoinh labels relevant
-@autosyn node dimensions labels_out
+@autosyn node dimensions labels_out call
 
 @attributes { int value; } T_NUM
 @attributes { char *value; } T_ID
 @attributes { symbol_table *sym; } Pars
 @attributes { symbol_dimensions dimensions; } Type
 @attributes {
+	int labels;
+	int labels_out;
+} Funcdef Program
+@attributes {
 	@autoinh symbol_table *sym;
 	ast_node *node;
+	bool call;
 } Args Bterm Bool
 @attributes {
 	@autoinh symbol_table *sym;
 	int labels;
 	int labels_out;
 	bool relevant;
+	bool call;
 } Stats
 @attributes {
 	@autoinh symbol_table *sym;
@@ -50,6 +56,7 @@ extern int yylex(void);
 	bool relevant;
 	int hook;
 	bool jump;
+	bool call;
 } Else
 @attributes {
 	@autoinh symbol_table *sym;
@@ -57,6 +64,7 @@ extern int yylex(void);
 	int labels_out;
 	bool relevant;
 	symbol_table *out;
+	bool call;
 } Stat
 @attributes {
 	@autosyn char* value;
@@ -66,36 +74,64 @@ extern int yylex(void);
 	@autoinh symbol_table *sym;
 	ast_node *node;
 	symbol_dimensions dimensions;
+	bool call;
 } Expr Term Lexpr Add Sub Mul
 
 @traversal @preorder assert
 @traversal @preorder code
 
-@macro arithmetic(op,type,)
+@macro arithmetic(op,)
         @i @op.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
-	@i @op.0.node@ = node_new(type, @Term.0.node@, @Term.1.node@);
+	@i @op.call@ = @Term.0.call@ || @Term.1.call@;
         @assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
 @end
 
-@macro arithmeticRecursive(op,type,)
+@macro arithmeticRecursive(op,)
         @i @op.0.dimensions@ = @op.1.dimensions@ + @Term.dimensions@;
-	@i @op.0.node@ = node_new(type, @op.1.node@, @Term.node@);
+	@i @op.0.call@ = @Term.0.call@ || @op.1.call@;
         @assert is_integer(@op.1.dimensions@); is_integer(@Term.dimensions@);
 @end
 
 @macro boolean(type,)
 	@i @Bterm.node@ = node_new(type, @Expr.0.node@, @Expr.1.node@);
+	@i @Bterm.call@ = @Expr.0.call@ || @Expr.1.call@;
 	@assert is_integer(@Expr.0.dimensions@); is_integer(@Expr.1.dimensions@);
 @end
 
 %%
-Program	:	Program Funcdef ';' | ;
+Dummy	:	Program
+@{
+	@i @Program.labels@ = 0;
+@}
+Program	:	Funcdef ';' Program
+@{
+	@i @Funcdef.labels@ = @Program.0.labels@;
+	@i @Program.1.labels@ = @Funcdef.labels_out@;
+	@i @Program.0.labels_out@ = @Program.1.labels_out@;
+@}
+	|
+@{
+	@i @Program.labels_out@ = 0;
+@}
+	;
 Vardef	:	T_ID ':' Type
 	;
-Args	:	Expr						@{ @i @Args.node@ = node_new(O_ARG, @Expr.node@, NULL); @}
-	|	Args ',' Expr					@{ @i @Args.0.node@ = node_new(O_ARG, @Expr.node@, @Args.1.node@); @}
+Args	:	Expr
+@{
+	@i @Args.node@ = @Expr.node@;
+@}
+	|	Args ',' Expr
+@{
+	@i @Args.0.node@ = node_new(O_ARG, @Args.1.node@, @Expr.node@);
+	@i @Args.0.call@ = @Args.1.call@ || @Expr.call@;
+@}
 	;
-Bool	:	Bterm | Bool T_OR Bterm				@{ @i @Bool.0.node@ = node_new(O_OR, @Bool.1.node@, @Bterm.node@); @}
+Bool	:	Bterm
+	|	Bool T_OR Bterm
+@{
+		@i @Bool.0.node@ = node_new(O_OR, @Bool.1.node@, @Bterm.node@);
+		@i @Bool.0.call@ = @Bool.1.call@ || @Bterm.call@;
+@}
 	;
 Bterm	:	'(' Bool ')'
 	|	T_NOT Bterm					@{ @i @Bterm.0.node@ = node_new(O_NOT, @Bterm.1.node@, NULL); @}
@@ -105,20 +141,18 @@ Bterm	:	'(' Bool ')'
 Expr    :       Term | Add | Sub | Mul ;
 Add     :       Term '+' Term
 @{
-	@i @Add.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	arithmetic(Add,)
 	@e Add.node : Term.node Term.1.node ; if (@Term.node@->is_imm && @Term.1.node@->is_imm) { @Add.node@ = node_new_num(@Term.node@->value + @Term.1.node@->value); } else if (!@Term.node@->is_imm) { @Add.node@ = node_new(O_ADD, @Term.0.node@, @Term.1.node@); } else { @Add.node@ = node_new(O_ADD, @Term.1.node@, @Term.0.node@); }
-	@assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
 @}
         |       Add '+' Term
 @{
-	@i @Add.0.dimensions@ = @Add.1.dimensions@ + @Term.dimensions@;
+	arithmeticRecursive(Add,)
 	@e Add.node : Add.1.node Term.node ; if (@Add.1.node@->is_imm && @Term.node@->is_imm) { @Add.0.node@ = node_new_num(@Add.1.node@->value + @Term.node@->value); } else if (!@Add.1.node@->is_imm) { @Add.0.node@ = node_new(O_ADD, @Add.1.node@, @Term.node@); } else { @Add.node@ = node_new(O_ADD, @Term.node@, @Add.1.node@); }
-	@assert is_integer(@Add.1.dimensions@); is_integer(@Term.dimensions@);
 @}
         ;
 Sub     :       Term '-' Term
 @{
-	@i @Sub.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	arithmetic(Sub,)
 	@i {
 		@Sub.0.node@ =
 			(@Term.0.node@->is_imm && @Term.1.node@->is_imm)
@@ -131,11 +165,10 @@ Sub     :       Term '-' Term
 				:
 				node_new(O_SUB, @Term.0.node@, @Term.1.node@);
 	}
-	@assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
 @}
 	|	Sub '-' Term
 @{
-        @i @Sub.dimensions@ = @Sub.1.dimensions@ + @Term.dimensions@;
+	arithmeticRecursive(Sub,)
         @i {
                 @Sub.0.node@ =
 			(@Sub.1.node@->is_imm && @Term.node@->is_imm)
@@ -152,12 +185,11 @@ Sub     :       Term '-' Term
 					:
 					node_new(O_SUB, @Sub.1.node@, @Term.node@);
         }
-        @assert is_integer(@Term.0.dimensions@); is_integer(@Sub.1.dimensions@);
 @}
         ;
 Mul	:	Term '*' Term
 @{
-	@i @Mul.dimensions@ = @Term.0.dimensions@ + @Term.1.dimensions@;
+	arithmetic(Mul,)
 	@i {
 		@Mul.0.node@ =
 			(@Term.0.node@->is_imm && @Term.1.node@->is_imm)
@@ -178,11 +210,10 @@ Mul	:	Term '*' Term
 						:
 							node_new(O_MUL, @Term.0.node@, @Term.1.node@);
 	}
-	@assert is_integer(@Term.0.dimensions@); is_integer(@Term.1.dimensions@);
 @}
         |       Mul '*' Term
 @{
-        @i @Mul.dimensions@ = @Mul.1.dimensions@ + @Term.dimensions@;
+	arithmeticRecursive(Mul,)
         @i {
                 @Mul.0.node@ =
 			(@Mul.1.node@->is_imm && @Term.node@->is_imm)
@@ -203,13 +234,13 @@ Mul	:	Term '*' Term
 						:
 							node_new(O_MUL, @Mul.1.node@, @Term.node@);
         }
-        @assert is_integer(@Term.0.dimensions@); is_integer(@Mul.1.dimensions@);
 @}
         ;
 Else	:	Stats T_END
 @{
 	@code {
 		@Stats.relevant@ = @Else.relevant@;
+		@Else.call@ = @Stats.call@;
 		if (@Else.jump@) {
 			printi("jmp L%ld # else", @Else.hook@ + 2);
 			printl(@Else.hook@ + 1);
@@ -221,16 +252,21 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stat.labels_out@ = @Stat.labels@;
+	@i @Stat.call@ = @Expr.call@;
 
 	@code {
 		if (@Stat.relevant@) {
-		burm_invoke(@Expr.node@);
-		if (@Expr.node@->is_imm) {
-			printi("movq $%ld, %%rax", @Expr.node@->value);
-		} else if (strcmp(@Expr.node@->reg, "rax") != 0) {
-			printi("movq %%%s, %%rax", @Expr.node@->reg);
-		}
-		printi("ret");
+			burm_invoke(@Expr.node@);
+			if (@Expr.node@->is_imm) {
+				printi("movq $%ld, %%rax", @Expr.node@->value);
+			} else {
+				move(@Expr.node@->reg, "rax");
+			}
+
+/*			if (need_stack)
+				printi("leave");
+*/
+			printi("ret");
 		}
 	}
 @}
@@ -238,6 +274,7 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stats.labels@ = @Stat.labels@ + 2;
+	@i @Stat.call@ = @Bool.call@ || @Stats.call@;
 
 	@code {
 		if (@Stat.relevant@) {
@@ -245,6 +282,7 @@ Stat	:	T_RETURN Expr
 			burm_invoke(@Bool.node@);
 			if (@Bool.node@->is_imm) {
 				@Stats.relevant@ = @Bool.node@->value;
+				@Stat.call@ = @Stats.relevant@ && @Stats.call@;
 			} else {
 				printi("jmp L%ld", @Stat.labels@ + 1);
 				@Stats.relevant@ = true;
@@ -268,6 +306,7 @@ Stat	:	T_RETURN Expr
 	@i @Else.labels@ = @Stats.labels_out@;
 	@i @Stat.labels_out@ = @Else.labels_out@;
 	@i @Else.jump@ = true;
+	@i @Stat.call@ = @Bool.call@ || @Stats.call@ || @Else.call@;
 
 	@code {
 		if (@Stat.relevant@) {
@@ -289,6 +328,7 @@ Stat	:	T_RETURN Expr
 			@Else.relevant@ = false;
 			@Else.jump@ = false;
 			@Stats.relevant@ = false;
+			@Stat.call@ = false;
 		}
 	}
 	@code @revorder(1) {
@@ -301,6 +341,7 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stats.labels@ = @Stat.labels@ + 3;
+	@i @Stat.call@ = @Bool.call@ || @Stats.call@;
 
 	@code {
 		@Stats.relevant@ = @Stat.relevant@;
@@ -318,6 +359,8 @@ Stat	:	T_RETURN Expr
 				printi("jmp L%ld", @Stat.labels@ + 2);
 				printl(@Stat.labels@ + 1);
 			}
+		} else {
+			@Stat.call@ = false;
 		}
 	}
 	@code @revorder(1) {
@@ -333,6 +376,10 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stat.labels_out@ = @Stat.labels@;
+
+	@code {
+		burm_invoke(@Term.node@);
+	}
 @}
 	|	T_VAR Vardef T_ASSIGN Expr
 @{
@@ -347,7 +394,7 @@ Stat	:	T_RETURN Expr
 			if (@Expr.node@->is_imm) {
 				printi("movq $%li, %%%s", @Expr.node@->value, symbol_table_get(@Stat.out@, @Vardef.value@)->reg);
 			} else {
-				printi("movq %%%s, %%%s", @Expr.node@->reg, symbol_table_get(@Stat.out@, @Vardef.value@)->reg);
+				move(@Expr.node@->reg, symbol_table_get(@Stat.out@, @Vardef.value@)->reg);
 			}
 		}
 	}
@@ -356,6 +403,7 @@ Stat	:	T_RETURN Expr
 @{
 	@i @Stat.out@ = @Stat.sym@;
 	@i @Stat.labels_out@ = @Stat.labels@;
+	@i @Stat.call@ = @Lexpr.call@ || @Expr.call@;
 
 	@assert same_dimensions(@Lexpr.dimensions@, @Expr.dimensions@);
 
@@ -363,6 +411,8 @@ Stat	:	T_RETURN Expr
 		if (@Stat.relevant@) {
 			ast_node *dummy = node_new(O_LEXPR, @Lexpr.node@, @Expr.node@);
 			burm_invoke(dummy);
+		} else {
+			@Stat.call@ = false;
 		}
 	}
 @}
@@ -370,10 +420,9 @@ Stat	:	T_RETURN Expr
 Funcdef	:	T_ID '(' Pars ')' Stats T_END
 @{
 	@e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); reg_reset();
-	@i @Stats.labels@ = 0;
 	@i @Stats.relevant@ = true;
 
-	@code funcdef(@T_ID.value@, @Pars.sym@);
+	@code funcdef(@T_ID.value@, @Pars.sym@, @Stats.call@);
 @}
 	|	T_ID '(' ')' Stats T_END
 @{
@@ -381,7 +430,7 @@ Funcdef	:	T_ID '(' Pars ')' Stats T_END
 	@i @Stats.labels@ = 0;
 	@i @Stats.relevant@ = true;
 
-	@code funcdef(@T_ID.value@, NULL);
+	@code funcdef(@T_ID.value@, NULL, @Stats.call@);
 @}
 	;
 Type	:	T_INT						@{ @i @Type.dimensions@ = 0; @}
@@ -392,6 +441,7 @@ Stats	:	Stat ';' Stats
 	@i @Stats.1.sym@ = @Stat.out@;
 	@i @Stats.1.labels@ = @Stat.labels_out@;
 	@i @Stats.0.labels_out@ = @Stats.1.labels_out@;
+	@i @Stats.0.call@ = @Stats.1.call@ || @Stat.call@;
 
 	@code {
 		@Stat.relevant@ = @Stats.0.relevant@;
@@ -401,6 +451,7 @@ Stats	:	Stat ';' Stats
 	|
 @{
 	@i @Stats.labels_out@ = @Stats.labels@;
+	@i @Stats.call@ = false;
 @}
 	;
 Pars	:	Vardef 						@{ @i @Pars.sym@ = symbol_table_add_par(NULL, @Vardef.value@, @Vardef.dimensions@, true); @}
@@ -411,11 +462,13 @@ Lexpr	:	T_ID
 @{
 	@i @Lexpr.dimensions@ = symbol_table_get_dimensions(@Lexpr.sym@, @T_ID.value@);
 	@i @Lexpr.node@ = node_new_id(@T_ID.value@, @Lexpr.sym@);
+	@i @Lexpr.call@ = false;
 @}
 	|	Term '[' Expr ']'
 @{
 	@i @Lexpr.dimensions@ = @Term.dimensions@ - 1;
 	@i @Lexpr.node@ = node_new(O_ARRAY, @Term.node@, @Expr.node@);
+	@i @Lexpr.call@ = @Term.call@ || @Expr.call@;
 	@assert is_array(@Term.dimensions@); is_integer(@Expr.dimensions@);
 @}
 	;
@@ -423,28 +476,24 @@ Term	:	'(' Expr ')'
 	|	T_ID '(' Args ')' ':' Type
 @{
 	@i @Term.node@ = node_new_call(@T_ID.value@, @Args.node@);
-
-	@code {
-		printi("#save");
-		save();
-		printi("#/save");
-		printi("call %s", @T_ID.value@);
-	}
+	@i @Term.call@ = true;
 @}
 	|	T_ID '(' ')' ':' Type
 @{
-	@i @Term.node@ = node_new_call(@T_ID.value@, NULL);
-
-	@code {
-		save();
-		printi("call %s", @T_ID.value@);
-	}
+	@i @Term.node@ = node_new_call(@T_ID.value@, node_new(O_NULL, NULL, NULL));
+	@i @Term.call@ = true;
 @}
-	|	T_NUM						@{ @i @Term.dimensions@ = 0; @i @Term.node@ = node_new_num(@T_NUM.value@); @}
+	|	T_NUM
+@{
+	@i @Term.dimensions@ = 0;
+	@i @Term.node@ = node_new_num(@T_NUM.value@);
+	@i @Term.call@ = false;
+@}
 	|	Term '[' Expr ']'
 @{
 	@i @Term.0.dimensions@ = @Term.1.dimensions@ - 1;
 	@i @Term.0.node@ = node_new(O_ARRAY, @Term.1.node@, @Expr.node@);
+	@i @Term.0.call@ = @Term.1.call@ || @Expr.call@;
 
 	@assert is_array(@Term.1.dimensions@); is_integer(@Expr.dimensions@);
 @}
@@ -452,6 +501,7 @@ Term	:	'(' Expr ')'
 @{
 	@i @Term.dimensions@ = symbol_table_get_dimensions(@Term.sym@, @T_ID.value@);
 	@i @Term.node@ = node_new_id(@T_ID.value@, @Term.sym@);
+	@i @Term.call@ = false;
 @}
 	;
 %%

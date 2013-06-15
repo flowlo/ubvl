@@ -10,7 +10,7 @@
 //reg_free_recursive(root->left); reg_free_recursive(root->right);
 
 ast_node* compress(ast_node*);
-void funcdef(char *name, symbol_table *table);
+void funcdef(char *name, symbol_table *table, bool call);
 char *gen_add(ast_node *bnode);
 char *gen_ladd(ast_node *bnode);
 char *gen_sub(ast_node *bnode);
@@ -24,7 +24,12 @@ bool is_par(char *reg);
 void reg_free(char *reg);
 void reg_reset();
 void reg_usage_print();
+void save(char*);
+void restore(char*);
+void prepare_call(ast_node*);
+void move(char*, char*);
 
+extern bool need_stack;
 extern bool print_trees;
 extern unsigned long label;
 

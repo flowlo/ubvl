@@ -8,20 +8,57 @@
 
 unsigned long label = 0;
 bool print_trees = false;
+bool need_stack = false;
 
 char vars[9][4]= { "rax", "r10", "r11", "r9", "r8", "rcx", "rdx", "rsi", "rdi" };
 char pars[6][4]= { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 static int var_usage[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 int par_usage[6] = { 0, 0, 0, 0, 0, 0 };
 
-void save() {
+void move(char* a, char* b) {
+	if (strcmp(a, b)) {
+		printi("movq %%%s, %%%s", a, b);
+	}
+}
+
+void prepare_call(ast_node* args) {
+#ifdef DEBUG
+	printf("#PREPARING ARGS\n");
+	node_print(args, 0);
+#endif
+	int num_args = 0;
+	while (args != NULL) {
+		if (args->op == O_ARG) {
+			printi("movq %%%s, %%%s", args->right->reg, pars[num_args++]);
+			args = args->left;
+		} else {
+			printi("movq %%%s, %%%s", args->reg, pars[num_args++]);
+			break;
+		}
+	}
+}
+
+void save(char* result) {
+#ifdef DEBUG
 	print_var_usage();
+#endif
 	int i;
 	for (i = 0; i < 9; i++) {
-		if (var_usage[i] > 0) {
+		if (strcmp(result, vars[i])) {
 			printi("pushq %%%s", vars[i]);
 		}
 	}
+}
+
+void restore(char *result) {
+#ifdef DEBUG
+	print_var_usage();
+#endif
+	int i;
+	for (i = 0; i < 9; i++)
+		if (strcmp(result, vars[i])) {
+			printi("popq %%%s", vars[i]);
+		}
 }
 
 ast_node* compress(ast_node *root) {
@@ -92,8 +129,11 @@ void reg_reset() {
 	memset(par_usage, 0, sizeof(int) * 6);
 }
 
-void funcdef(char *name, symbol_table *table) {
+void funcdef(char *name, symbol_table *table, bool call) {
 	printf(".globl %1$s\n.type %1$s, @function\n%1$s:\n", name);
+
+	if ((need_stack = call))
+		printf("# stack needed!\n");
 
 	if (table != NULL) {
 		printf("#");
@@ -103,6 +143,7 @@ void funcdef(char *name, symbol_table *table) {
 		} while((table = table->next) != NULL);
 
 		printf("\n");
+
 	}
 
 	int i;

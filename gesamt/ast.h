@@ -8,26 +8,25 @@
  * SUB		left - right
  * ID		Refers to a defined variable. (name)
  * NUM		Numeric constant.
- * RETURN	Returns left.
- * ASSIGN	left: variable, right: value
- * IF		left: either O_STATS if there is no else clause, or O_ELSE, right: the condition (O_NEQ, O_LT)
- * WHILE
- * STATS
- * ELSE
- * ARRAY
+ * LEXPR	left: variable, right: value
+ * ARRAY	left: id or array, right: index
  * OR		left || right
  * NOT		!left
+ * ARG		left: next argument or O_NULL, right: expression
+ * CALL		left: name of function, right: arguments or O_NULL
  */
 
 #ifndef AST_H
 #define AST_H
 #include "symbol_table.h"
+#include "glue.h"
 
 #ifndef CODE_BFE
 typedef struct burm_state *STATEPTR_TYPE;
 #endif
 
 #define FOREACH(CALLBACK) \
+	CALLBACK(O_NULL) \
 	CALLBACK(O_NEQ) \
 	CALLBACK(O_LT) \
 	CALLBACK(O_ADD) \
