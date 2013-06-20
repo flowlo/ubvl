@@ -118,7 +118,7 @@ Vardef	:	T_ID ':' Type
 	;
 Args	:	Expr
 @{
-	@i @Args.node@ = @Expr.node@;
+	@i @Args.node@ = node_new(O_ARG, node_new(O_NULL, NULL, NULL), @Expr.node@);
 @}
 	|	Args ',' Expr
 @{

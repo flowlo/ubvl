@@ -17,4 +17,4 @@ code.c: code.bfe
 	@bfe < code.bfe | iburg > code.c
 
 clean:
-	@rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o gesamt code.c code.o symbol_table.o ast.o glue.o parser.output
+	@rm -f oxout.l oxout.y scanner.c scanner.o parser.h parser.c parser.o gesamt code.c code.o symbol_table.o ast.o glue.o parser.output testgesamtout*

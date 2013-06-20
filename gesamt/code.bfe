@@ -27,7 +27,11 @@ call:	O_CALL(null)	# 2 # save(bnode->reg); printi("call %s", bnode->name); move(
 call:	O_CALL(args)	# 2 # save(bnode->reg); prepare_call(bnode->left); printi("call %s", bnode->name); move("rax", bnode->reg); restore(bnode->reg);
 
 args:	expr			# 0 #
-args:	O_ARG(args, expr)	# 0 #
+args:	O_ARG(args, axpr)	# 0 #
+args:	O_NULL
+
+axpr:	expr			# 1
+axpr:	O_NUM			# 0
 
 lexpr:	O_LEXPR(array, expr)	# 0 # printi("movq %%%s, (%%%s)", bnode->right->reg, bnode->left->reg);
 lexpr:	O_LEXPR(array, imm)	# 0 # printi("movq $%ld, (%%%s)", bnode->right->value, bnode->left->reg);

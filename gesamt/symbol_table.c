@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "symbol_table.h"
 #include "glue.h"
@@ -178,9 +179,9 @@ void symbol_table_print(symbol_table *table) {
 	symbol_table *i = table;
 	do {
 		if (i->dimensions)
-			fprintf(stderr, "# %p\t%s\t%d-dimensional array\n", i, i->id, i->dimensions);
+			fprintf(stderr, "# %p\t%s\t%d-dimensional array\t%%%s\n", i, i->id, i->dimensions, i->reg);
 		else
-			fprintf(stderr, "# %p\t%s\tinteger\n", i, i->id);
+			fprintf(stderr, "# %p\t%s\tinteger\t%%%s\n", i, i->id, i->reg);
 	} while ((i = i->next) != NULL);
 }
 

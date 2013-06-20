@@ -1,5 +1,5 @@
-#ifndef SYMBOLS_H
-#define SYMBOLS_H
+#ifndef SYMBOL_TABLE_H
+#define SYMBOL_TABLE_H
 #include <stdbool.h>
 
 typedef int symbol_dimensions;

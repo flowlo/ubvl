@@ -3,7 +3,7 @@
 #include <string.h>
 
 #include "ast.h"
-#include "symbol_table.h"
+#include "glue.h"
 
 const char *op_name[] = {
 	FOREACH(GENERATE_STRING)

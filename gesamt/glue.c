@@ -4,8 +4,6 @@
 
 #include "glue.h"
 
-//#define DEBUG
-
 unsigned long label = 0;
 bool print_trees = false;
 bool need_stack = false;
@@ -14,6 +12,7 @@ char vars[9][4]= { "rax", "r10", "r11", "r9", "r8", "rcx", "rdx", "rsi", "rdi" }
 char pars[6][4]= { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 static int var_usage[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 int par_usage[6] = { 0, 0, 0, 0, 0, 0 };
+bool last_save[9] = { false, false, false, false, false, false, false, false, false };
 
 void move(char* a, char* b) {
 	if (strcmp(a, b)) {
@@ -23,43 +22,31 @@ void move(char* a, char* b) {
 
 void prepare_call(ast_node* args) {
 #ifdef DEBUG
-	printf("#PREPARING ARGS\n");
 	node_print(args, 0);
 #endif
 	ast_node *cp = args;
 	int num_args = 0;
-	while (args != NULL) {
+	while (args != NULL && args->op != O_NULL) {
 		num_args++;
-		if (args->op == O_ARG) {
-			if (is_par(args->right->reg)) {
-				char *reg = reg_new_var();
-				move(args->right->reg, reg);
-				args->right->reg = reg;
-			}
-			args = args->left;
-		} else {
-			if (is_par(args->reg)) {
-				char *reg = reg_new_var();
-				move(args->reg, reg);
-				args->reg = reg;
-
-			}
-			break;
+		if (args->right->op != O_NUM && is_par(args->right->reg)) {
+			char *reg = reg_new_var();
+			move(args->right->reg, reg);
+			args->right->reg = reg;
 		}
+		args = args->left;
 	}
 
 	args = cp;
 	int i = 1;
-	while (args != NULL) {
-		if (args->op == O_ARG) {
-			move(args->right->reg, pars[num_args - i++]);
-			reg_free(args->right->reg);
-			args = args->left;
+	while (args != NULL && args->op != O_NULL) {
+		if (args->right->op == O_NUM) {
+			printi("movq $%ld, %%%s", args->right->value, pars[num_args - i++]);
 		} else {
-			move(args->reg, pars[num_args - i++]);
-			reg_free(args->reg);
-			break;
+			move(args->right->reg, pars[num_args - i++]);
+			if (args->right->op != O_ID)
+				reg_free(args->right->reg);
 		}
+		args = args->left;
 	}
 }
 
@@ -68,11 +55,13 @@ void save(char* result) {
 	print_var_usage();
 #endif
 	int i;
-	for (i = 0; i < 9; i++) {
-		if (strcmp(result, vars[i])) {
+	for (i = 0; i < 9; i++)
+		if (strcmp(result, vars[i]) && var_usage[i] > 0) {
 			printi("pushq %%%s", vars[i]);
+			last_save[i] = true;
+		} else {
+			last_save[i] = false;
 		}
-	}
 }
 
 void restore(char *result) {
@@ -80,8 +69,8 @@ void restore(char *result) {
 	print_var_usage();
 #endif
 	int i;
-	for (i = 0; i < 9; i++)
-		if (strcmp(result, vars[i])) {
+	for (i = 8; i > -1; i--)
+		if (last_save[i]) {
 			printi("popq %%%s", vars[i]);
 		}
 }
@@ -157,9 +146,13 @@ void reg_reset() {
 void funcdef(char *name, symbol_table *table, bool call) {
 	printf(".globl %1$s\n.type %1$s, @function\n%1$s:\n", name);
 
+#ifdef DEBUG
+	symbol_table_print(table);
+#endif
+
 	if ((need_stack = call)) {
 		printf("# stack needed!\n");
-		printi("enter $100, $0");
+//		printi("enter $100, $0");
 	}
 
 	if (table != NULL) {
@@ -167,21 +160,16 @@ void funcdef(char *name, symbol_table *table, bool call) {
 
 		do {
 			printf(" %s@%s", table->id, table->reg);
+
+			int j;
+			for (j = 0; j < 9; j++)
+				if(strcmp(vars[j], table->reg) == 0)
+					var_usage[j]++;
+
 		} while((table = table->next) != NULL);
 
 		printf("\n");
 
-	}
-
-	int i;
-	symbol_table *element;
-	for (i = 5, element = table; i > -1 && element != NULL; i--, element = element->next) {
-		element->reg = strdup(pars[i]);
-		int j;
-		for (j = 0; j < 9; j++) {
-			if(strcmp(vars[j], pars[i]) == 0)
-				var_usage[j]++;
-		}
 	}
 
 	reg_usage_print();

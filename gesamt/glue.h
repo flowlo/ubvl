@@ -7,8 +7,6 @@
 #define printl(label) printf("L%ld:\n", label);
 #define burm_invoke(root) root = compress(root); if(print_trees) { node_print(root, 0); } burm_label(root); burm_reduce(root, 1);
 
-//reg_free_recursive(root->left); reg_free_recursive(root->right);
-
 ast_node* compress(ast_node*);
 void funcdef(char *name, symbol_table *table, bool call);
 char *gen_add(ast_node *bnode);
