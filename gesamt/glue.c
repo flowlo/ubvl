@@ -26,9 +26,17 @@ void prepare_call(ast_node* args) {
 #endif
 	ast_node *cp = args;
 	int num_args = 0;
+	/* count arguments */
 	while (args != NULL && args->op != O_NULL) {
 		num_args++;
-		if (args->right->op != O_NUM && is_par(args->right->reg)) {
+		args = args->left;
+	}
+
+	args = cp;
+	int i = 1;
+	/* make sure arguments to this function are not overwritten in case they swap position */
+	while (args != NULL && args->op != O_NULL) {
+		if (args->right->op != O_NUM && is_par(args->right->reg) && strcmp(args->right->reg, pars[num_args - i++])) {
 			char *reg = reg_new_var();
 			move(args->right->reg, reg);
 			args->right->reg = reg;
@@ -37,7 +45,8 @@ void prepare_call(ast_node* args) {
 	}
 
 	args = cp;
-	int i = 1;
+	i = 1;
+	/* move everything to the right place */
 	while (args != NULL && args->op != O_NULL) {
 		if (args->right->op == O_NUM) {
 			printi("movq $%ld, %%%s", args->right->value, pars[num_args - i++]);

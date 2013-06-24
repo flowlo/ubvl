@@ -73,6 +73,7 @@ term:	call			# 0
 bool:	O_OR(bool, bterm)	# 0
 bool:	bterm			# 0
 
+bterm:	bool
 bterm:	O_NOT(O_NOT(bterm))	# 0 #
 bterm:	O_NEQ(expr, expr)	# 0 # printi("cmp %%%s, %%%s", bnode->right->reg, bnode->left->reg); printi("jne L%ld", label);
 bterm:	O_NEQ(expr, imm)	# 0 # printi("cmp $%ld, %%%s", bnode->right->value, bnode->left->reg); printi("jne L%ld", label);
