@@ -33,16 +33,14 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 		}
 
 		i->id = strdup(j->id);
-		if (j->reg != NULL)
-			i->reg = strdup(j->reg);
+		i->reg = j->reg;
 		i->dimensions = j->dimensions;
 		i = i->next;
 		j = j->next;
 	}
 
 	i->id = strdup(j->id);
-	if (j->reg != NULL)
-		i->reg = strdup(j->reg);
+	i->reg = j->reg;
 	i->dimensions = j->dimensions;
 	i->next = NULL;
 
@@ -50,10 +48,10 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 }
 
 symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions dimensions, bool check) {
-	return symbol_table_add_with_reg(table, id, dimensions, check, NULL);
+	return symbol_table_add_with_reg(table, id, dimensions, check, -1);
 }
 
-symbol_table *symbol_table_add_with_reg(symbol_table *table, char *id, symbol_dimensions dimensions, bool check, char *reg) {
+symbol_table *symbol_table_add_with_reg(symbol_table *table, char *id, symbol_dimensions dimensions, bool check, char reg) {
 	symbol_table *result = malloc(sizeof(symbol_table));
 
 	if (result == NULL) {
@@ -66,14 +64,13 @@ symbol_table *symbol_table_add_with_reg(symbol_table *table, char *id, symbol_di
 	}
 
 	#ifdef DEBUG
-	printf("# added symbol '%s' with register '%s'.\n", id, reg);
+	printf("# added symbol '%s' with register '%s'.\n", id, regs[reg]);
 	print_var_usage();
 	#endif
 
 	result->next = table;
 	result->id = strdup(id);
-	if (reg != NULL)
-		result->reg = strdup(reg);
+	result->reg = reg;
 	result->dimensions = dimensions;
 
 	return result;
@@ -134,8 +131,7 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 		}
 
 		i->id = strdup(j->id);
-		if (j->reg != NULL)
-			i->reg = strdup(j->reg);
+		i->reg = j->reg;
 		i->dimensions = j->dimensions;
 		i = i->next;
 		j = j->next;
@@ -152,16 +148,14 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 		}
 
 		i->id = strdup(j->id);
-		if (j->reg != NULL)
-			i->reg = strdup(j->reg);
+		i->reg = j->reg;
 		i->dimensions = j->dimensions;
 		i = i->next;
 		j = j->next;
 	}
 
 	i->id = strdup(j->id);
-	if (j->reg != NULL)
-		i->reg = strdup(j->reg);
+	i->reg = j->reg;
 	i->dimensions = j->dimensions;
 	i->next = NULL;
 
@@ -179,9 +173,9 @@ void symbol_table_print(symbol_table *table) {
 	symbol_table *i = table;
 	do {
 		if (i->dimensions)
-			fprintf(stderr, "# %p\t%s\t%d-dimensional array\t%%%s\n", i, i->id, i->dimensions, i->reg);
+			fprintf(stderr, "# %p\t%s\t%d-dimensional array\t%%%s\n", i, i->id, i->dimensions, regs[i->reg]);
 		else
-			fprintf(stderr, "# %p\t%s\tinteger\t%%%s\n", i, i->id, i->reg);
+			fprintf(stderr, "# %p\t%s\tinteger\t%%%s\n", i, i->id, regs[i->reg]);
 	} while ((i = i->next) != NULL);
 }
 
@@ -208,7 +202,7 @@ void variable_exists(symbol_table *table, char *id) {
 		exit(3);
 	}
 
-	printf("# identified '%s' as %p in register '%s'.\n", id, element, element->reg);
+	printf("# identified '%s' as %p in register '%s'.\n", id, element, regs[element->reg]);
 }
 
 void same_dimensions(symbol_dimensions a, symbol_dimensions b) {

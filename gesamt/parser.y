@@ -260,7 +260,7 @@ Stat	:	T_RETURN Expr
 			if (@Expr.node@->is_imm) {
 				printi("movq $%ld, %%rax", @Expr.node@->value);
 			} else {
-				move(@Expr.node@->reg, "rax");
+				move(@Expr.node@->reg, 0);
 			}
 
 /*			if (need_stack)
@@ -392,7 +392,7 @@ Stat	:	T_RETURN Expr
 		if (@Stat.relevant@) {
 			burm_invoke(@Expr.node@);
 			if (@Expr.node@->is_imm) {
-				printi("movq $%li, %%%s", @Expr.node@->value, symbol_table_get(@Stat.out@, @Vardef.value@)->reg);
+				printi("movq $%li, %%%s", @Expr.node@->value, regs[symbol_table_get(@Stat.out@, @Vardef.value@)->reg]);
 			} else {
 				move(@Expr.node@->reg, symbol_table_get(@Stat.out@, @Vardef.value@)->reg);
 			}
