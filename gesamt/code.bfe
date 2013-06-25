@@ -96,3 +96,4 @@ imm:	O_LT(imm, imm)		# 0 # bnode->value = bnode->left->value < bnode->right->val
 imm:	O_NEQ(imm, imm)		# 0 # bnode->value = (bnode->left->value != bnode->right->value); bnode->is_imm = true;
 imm:	O_NOT(imm)		# 0 # bnode->value = !bnode->left->value; bnode->is_imm = true;
 imm:	O_NOT(O_NOT(imm))	# 0 # bnode->is_imm = true;
+imm:	O_OR(imm, imm)		# 0 # bnode->value = bnode->left->value || bnode->right->value; bnode->is_imm = true;

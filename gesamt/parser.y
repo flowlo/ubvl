@@ -419,14 +419,14 @@ Stat	:	T_RETURN Expr
 	;
 Funcdef	:	T_ID '(' Pars ')' Stats T_END
 @{
-	@e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true); reg_reset();
+	@e Stats.sym : Pars.sym ; @Stats.sym@ = symbol_table_merge(@Pars.sym@, @Stats.sym@, true);
 	@i @Stats.relevant@ = true;
 
 	@code funcdef(@T_ID.value@, @Pars.sym@, @Stats.call@);
 @}
 	|	T_ID '(' ')' Stats T_END
 @{
-	@i @Stats.sym@ = NULL; reg_reset();
+	@i @Stats.sym@ = NULL;
 	@i @Stats.labels@ = 0;
 	@i @Stats.relevant@ = true;
 
@@ -517,7 +517,6 @@ int main(int argc, char **argv) {
 		switch (c) {
 			case 'a':
 				print_trees = true;
-				printf("# printing trees for expressions \n");
 			break;
 		}
 

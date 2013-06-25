@@ -81,6 +81,10 @@ symbol_table *symbol_table_add_var(symbol_table *table, char *id, symbol_dimensi
 }
 
 symbol_table *symbol_table_add_par(symbol_table *table, char *id, symbol_dimensions dimensions, bool check) {
+	/* when adding the first parameter, clear register allocations. TODO move this to a more suitable place. */
+	if (table == NULL)
+		reg_reset();
+
 	return symbol_table_add_with_reg(table, id, dimensions, check, reg_new_par());
 }
 

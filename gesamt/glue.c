@@ -33,7 +33,6 @@ void prepare_call(ast_node* args) {
 	/* make sure arguments to this function are not overwritten in case they swap position */
 	while (args != NULL && args->op != O_NULL) {
 		if (args->right->op != O_NUM && is_par(args->right->reg) && args->right->reg != 8 - num_args + i++) {
-			printf("# dealing with %s\n", args->right->name);
 			int reg = reg_new_var();
 			move(args->right->reg, reg);
 			args->right->reg = reg;
@@ -139,8 +138,7 @@ void funcdef(char *name, symbol_table *table, bool call) {
 	symbol_table_print(table);
 #endif
 
-	if ((need_stack = call))
-		printf("# stack needed!\n");
+	need_stack = call;
 
 	if (table != NULL) {
 		printf("#");
@@ -151,12 +149,7 @@ void funcdef(char *name, symbol_table *table, bool call) {
 		} while((table = table->next) != NULL);
 
 		printf("\n");
-
 	}
-
-	reg_usage_print();
-
-	return;
 }
 
 void reg_restore(symbol_table *table) {
@@ -311,9 +304,16 @@ int gen_lsub(ast_node* bnode) {
 
 int gen_sub(ast_node *bnode) {
 	if (bnode->left->is_imm) {
-		if (bnode->left->value == 0 && !is_par(bnode->right->reg) && bnode->right->name == NULL) {
-			printi("neg %%%s", regs[bnode->right->reg]);
-			return bnode->right->reg;
+		if (bnode->left->value == 0) {
+			if (!is_par(bnode->right->reg) && bnode->right->name == NULL) {
+				printi("neg %%%s", regs[bnode->right->reg]);
+				return bnode->right->reg;
+			} else {
+				int reg = reg_new_var();
+				move(bnode->right->reg, reg);
+				printi("neg %%%s", regs[reg]);
+				return reg;
+			}
 		}
 		else {
 			if (!is_par(bnode->right->reg) && bnode->right->name == NULL) {
@@ -419,7 +419,9 @@ int binary(char *op, ast_node *first, ast_node *second, bool commutative) {
 }
 
 int reg_new_var(void) {
+#ifdef DEBUG
 	reg_usage_print();
+#endif
 
 	int i = 0;
 	for (i = 0; i < 9; i++)
@@ -436,7 +438,9 @@ int reg_new_var(void) {
 }
 
 int reg_new_par(void) {
+#ifdef DEBUG
 	reg_usage_print();
+#endif
 
 	int i;
 	for (i = 8; i > 2; i--)
@@ -458,7 +462,9 @@ void reg_free(int reg) {
 		return;
 	}
 
+#ifdef DEBUG
 	reg_usage_print();
+#endif
 	usage[reg]--;
 }
 
@@ -477,7 +483,6 @@ bool is_par(int reg) {
 }
 
 void reg_usage_print() {
-#ifdef DEBUG
 	printf("# used:");
 
 	int i = 0;
@@ -486,5 +491,4 @@ void reg_usage_print() {
 			printf(" %s(%d)", regs[i], usage[i]);
 
 	printf("\n");
-#endif
 }
