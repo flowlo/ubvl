@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <string.h>
 #include "glue.h"
 
 unsigned long label = 0;
@@ -11,7 +11,7 @@ char regs[9][4]= { "rax", "r10", "r11", "r9", "r8", "rcx", "rdx", "rsi", "rdi" }
 static int usage[9] = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 bool last_save[9] = { false, false, false, false, false, false, false, false, false };
 
-void move(char a, char b) {
+void move(int a, int b) {
 	if (a != b)
 		printi("movq %%%s, %%%s", regs[a], regs[b]);
 }
@@ -34,7 +34,7 @@ void prepare_call(ast_node* args) {
 	while (args != NULL && args->op != O_NULL) {
 		if (args->right->op != O_NUM && is_par(args->right->reg) && args->right->reg != 8 - num_args + i++) {
 			printf("# dealing with %s\n", args->right->name);
-			char reg = reg_new_var();
+			int reg = reg_new_var();
 			move(args->right->reg, reg);
 			args->right->reg = reg;
 		}
@@ -56,21 +56,21 @@ void prepare_call(ast_node* args) {
 	}
 }
 
-void save(char result) {
+void save(int result) {
 #ifdef DEBUG
 	reg_usage_print();
 #endif
-	char i;
+	int i;
 	for (i = 0; i < 9; i++)
 		if ((last_save[i] = (result != i && usage[i] > 0)))
 			printi("pushq %%%s", regs[i]);
 }
 
-void restore(char result) {
+void restore(int result) {
 #ifdef DEBUG
 	reg_usage_print();
 #endif
-	char i;
+	int i;
 	for (i = 8; i > -1; i--)
 		if (last_save[i])
 			printi("popq %%%s", regs[i]);
@@ -167,7 +167,6 @@ void reg_restore(symbol_table *table) {
 
 	printf("#");
 
-	int i;
 	do {
 		if (table->reg > -1) {
 			printf(" %s@%s", table->id, regs[table->reg]);
@@ -177,7 +176,7 @@ void reg_restore(symbol_table *table) {
 	printf("\n");
 }
 
-char gen_mul(ast_node *bnode) {
+int gen_mul(ast_node *bnode) {
 	if (bnode->left->is_imm) {
 		if (bnode->left->value == 1) {
 			return bnode->right->reg;
@@ -188,7 +187,7 @@ char gen_mul(ast_node *bnode) {
 				return bnode->right->reg;
 			}
 			else {
-				char reg = reg_new_var();
+				int reg = reg_new_var();
 #ifdef DEBUG
 				printf("# gen_mul allocated %s\n", reg);
 #endif
@@ -208,7 +207,7 @@ char gen_mul(ast_node *bnode) {
 				return bnode->left->reg;
 			}
 			else {
-				char reg = reg_new_var();
+				int reg = reg_new_var();
 #ifdef DEBUG
 				printf("# gen_mul allocated %s\n", reg);
 #endif
@@ -223,7 +222,7 @@ char gen_mul(ast_node *bnode) {
 	}
 }
 
-char gen_add(ast_node *bnode) {
+int gen_add(ast_node *bnode) {
 	if (bnode->left->is_imm) {
 		if (bnode->left->value == 0) {
 			return bnode->right->reg;
@@ -239,7 +238,7 @@ char gen_add(ast_node *bnode) {
 				}
 			}
 			else {
-				char reg = reg_new_var();
+				int reg = reg_new_var();
 #ifdef DEBUG
 				printf("# gen_add allocated %s\n", regs[reg]);
 #endif
@@ -264,7 +263,7 @@ char gen_add(ast_node *bnode) {
 				}
 			}
 			else {
-				char reg = reg_new_var();
+				int reg = reg_new_var();
 #ifdef DEBUG
 				printf("# gen_add allocated %s\n", reg);
 #endif
@@ -277,7 +276,7 @@ char gen_add(ast_node *bnode) {
 	else {
 //		printf("%d %d %d %d\n", !is_par(bnode->left->reg) ?0:1, bnode->left->name == NULL ?0:1, !is_par(bnode->right->reg) ?0:1, bnode->right->name == NULL?0:1);
 //		if ((!is_par(bnode->left->reg)) && (bnode->left->name == NULL) && (!is_par(bnode->right->reg)) && (bnode->right->name == NULL)) {
-//			char *reg = reg_new_var();
+//			int *reg = reg_new_var();
 //			printi("leaq (%%%s, %%%s), %%%s", bnode->left->reg, bnode->right->reg, reg);
 //			return reg;
 //		} else {
@@ -286,8 +285,8 @@ char gen_add(ast_node *bnode) {
 	}
 }
 
-char gen_ladd(ast_node* bnode) {
-	char reg;
+int gen_ladd(ast_node* bnode) {
+	int reg;
 	if (!is_par(bnode->left->right->reg) && bnode->left->right->name == NULL) {
 		reg = bnode->left->right->reg;
 		printi("leaq %ld (%%%s, %%%s), %%%s", bnode->right->value, regs[bnode->left->left->reg], regs[bnode->left->right->reg], regs[reg]);
@@ -298,8 +297,8 @@ char gen_ladd(ast_node* bnode) {
 	return reg;
 }
 
-char gen_lsub(ast_node* bnode) {
-	char reg;
+int gen_lsub(ast_node* bnode) {
+	int reg;
 	if (!is_par(bnode->left->right->reg) && bnode->left->right->name == NULL) {
 		reg = bnode->left->right->reg;
 		printi("leaq %ld (%%%s, %%%s), %%%s", -bnode->right->value, regs[bnode->left->left->reg], regs[bnode->left->right->reg], regs[reg]);
@@ -310,7 +309,7 @@ char gen_lsub(ast_node* bnode) {
 	return reg;
 }
 
-char gen_sub(ast_node *bnode) {
+int gen_sub(ast_node *bnode) {
 	if (bnode->left->is_imm) {
 		if (bnode->left->value == 0 && !is_par(bnode->right->reg) && bnode->right->name == NULL) {
 			printi("neg %%%s", regs[bnode->right->reg]);
@@ -341,7 +340,7 @@ char gen_sub(ast_node *bnode) {
 				}
 			}
 			else {
-				char reg = reg_new_var();
+				int reg = reg_new_var();
 				printi("leaq %ld (%%%s), %%%s", -bnode->right->value, regs[bnode->left->reg], regs[reg]);
 				return reg;
 			}
@@ -352,9 +351,9 @@ char gen_sub(ast_node *bnode) {
 	}
 }
 
-char binary(char *op, ast_node *first, ast_node *second, bool commutative) {
+int binary(char *op, ast_node *first, ast_node *second, bool commutative) {
 	bool first_is_par = is_par(first->reg), second_is_par = is_par(second->reg);
-	char reg;
+	int reg;
 
 	if (first_is_par && second_is_par) {
 		reg = reg_new_var();
@@ -419,10 +418,10 @@ char binary(char *op, ast_node *first, ast_node *second, bool commutative) {
 	return reg;
 }
 
-char reg_new_var(void) {
+int reg_new_var(void) {
 	reg_usage_print();
 
-	char i = 0;
+	int i = 0;
 	for (i = 0; i < 9; i++)
 		if (usage[i] == 0) {
 			usage[i]++;
@@ -436,10 +435,10 @@ char reg_new_var(void) {
 	exit(4);
 }
 
-char reg_new_par(void) {
+int reg_new_par(void) {
 	reg_usage_print();
 
-	char i;
+	int i;
 	for (i = 8; i > 2; i--)
 		if (usage[i] == 0) {
 			usage[i]++;
@@ -453,7 +452,7 @@ char reg_new_par(void) {
 	exit(4);
 }
 
-void reg_free(char reg) {
+void reg_free(int reg) {
 	if (reg < 0) {
 		fprintf(stderr, "Invalid register!");
 		return;
@@ -473,7 +472,7 @@ void reg_free_recursive(ast_node *node) {
 	}
 }
 
-bool is_par(char reg) {
+bool is_par(int reg) {
 	return reg > 2;
 }
 
@@ -481,7 +480,7 @@ void reg_usage_print() {
 #ifdef DEBUG
 	printf("# used:");
 
-	char i = 0;
+	int i = 0;
 	for (i = 0; i < 9; i++)
 		if (usage[i] > 0)
 			printf(" %s(%d)", regs[i], usage[i]);

@@ -8,7 +8,7 @@ struct symbol_table {
 	struct symbol_table *next;
 	char *id;
 	symbol_dimensions dimensions;
-	char reg;
+	int reg;
 };
 
 typedef struct symbol_table symbol_table;

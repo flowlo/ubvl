@@ -9,23 +9,23 @@
 
 ast_node* compress(ast_node*);
 void funcdef(char *name, symbol_table *table, bool call);
-char gen_add(ast_node *bnode);
-char gen_ladd(ast_node *bnode);
-char gen_sub(ast_node *bnode);
-char gen_lsub(ast_node *bnode);
-char gen_mul(ast_node *bnode);
-char binary(char *op, ast_node *first, ast_node *second, bool commutative);
-char reg_new_var(void);
-char reg_new_par(void);
-bool is_var(char reg);
-bool is_par(char reg);
-void reg_free(char reg);
+int gen_add(ast_node *bnode);
+int gen_ladd(ast_node *bnode);
+int gen_sub(ast_node *bnode);
+int gen_lsub(ast_node *bnode);
+int gen_mul(ast_node *bnode);
+int binary(char *op, ast_node *first, ast_node *second, bool commutative);
+int reg_new_var(void);
+int reg_new_par(void);
+bool is_var(int reg);
+bool is_par(int reg);
+void reg_free(int reg);
 void reg_reset();
 void reg_usage_print();
-void save(char);
-void restore(char);
+void save(int);
+void restore(int);
 void prepare_call(ast_node*);
-void move(char, char);
+void move(int, int);
 
 extern bool need_stack;
 extern bool print_trees;
