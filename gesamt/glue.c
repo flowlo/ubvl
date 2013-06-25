@@ -28,8 +28,6 @@ void prepare_call(ast_node* args) {
 		args = args->left;
 	}
 
-	printf("# num_args = %d\n", num_args);
-
 	args = cp;
 	int i = 1;
 	/* make sure arguments to this function are not overwritten in case they swap position */
