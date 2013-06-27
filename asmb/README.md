@@ -20,12 +20,11 @@ size_t asmb(char *s, size_t n)
 }
 ````
 
-Schreiben Sie diese Funktion in Assembler unter Verwendung von `pcmpeqb`.
-Sie dürfen dabei annehmen, dass hinter dem letzten Zeichen von `s` noch 16 Bytes zugreifbar sind.
+Schreiben Sie diese Funktion in Assembler unter Verwendung von `pcmpeqb`. Sie dürfen dabei annehmen, dass hinter dem letzten Zeichen von `s` noch 16 Bytes zugreifbar sind.  
 Für besonders effiziente Lösungen (gemessen an der Anzahl der _ausgeführten_ Maschinenbefehle; wird ein Befehl _n_ mal ausgeführt, zählt er _n_-fach) gibt es Bonuspunkte.
 
 ## Hinweis
-Beachten Sie, dass Sie nur dann Punkte bekommen, wenn Ihre Version korrekt ist, also bei jeder zulässigen Eingabe das gleiche Resultat liefert wie das Original. Dadurch können Sie viel mehr verlieren als Sie durch Optimierung gewinnen können, also optimieren Sie im Zweifelsfall lieber weniger als mehr.
+Beachten Sie, dass Sie nur dann Punkte bekommen, wenn Ihre Version korrekt ist, also bei jeder zulässigen Eingabe das gleiche Resultat liefert wie das Original. Dadurch können Sie viel mehr verlieren als Sie durch Optimierung gewinnen können, also optimieren Sie im Zweifelsfall lieber weniger als mehr.  
 Die Vertrautheit mit dem Assembler müssen Sie beim Gespräch am Ende des Semesters beweisen, indem Sie Fragen zum abgegebenen Code beantworten.
 
 ## Abgabe
