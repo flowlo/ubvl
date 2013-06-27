@@ -10,7 +10,7 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 
 	if (result == NULL) {
 		fprintf(stderr, "Out of memory initializing new table while cloning table %p, malloc failed (tried to allocate %lu bytes).", table, sizeof(symbol_table));
-		exit(128);
+		exit(42);
 	}
 
 	symbol_table *i = result, *j = table;
@@ -20,7 +20,7 @@ symbol_table *symbol_table_clone(symbol_table *table) {
 
 		if (i->next == NULL) {
 			fprintf(stderr, "Out of memory adding symbol '%s' while cloning table %p, malloc failed (tried to allocate %lu bytes).", j->id, table, sizeof(symbol_table));
-			exit(128);
+			exit(42);
 		}
 
 		i->id = strdup(j->id);
@@ -41,7 +41,7 @@ symbol_table *symbol_table_add(symbol_table *table, char *id, symbol_dimensions 
 
 	if (result == NULL) {
 		fprintf(stderr, "Out of memory adding symbol '%s' to table %p, malloc failed (tried to allocate %lu bytes).", id, table, sizeof(symbol_table));
-		exit(128);
+		exit(42);
 	}
 	else if (check && symbol_table_get(table, id) != NULL) {
 		fprintf(stderr, "Duplicate symbol '%s'.\n", id);
@@ -88,7 +88,7 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 
 	if (result == NULL) {
 		fprintf(stderr, "Out of memory initializing new table in order to merge tables %p and %p, malloc failed (tried to allocate %lu bytes).", a, b, sizeof(symbol_table));
-		exit(128);
+		exit(42);
 	}
 
 	symbol_table *i = result, *j = b;
@@ -98,7 +98,7 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 
 		if (i->next == NULL) {
 			fprintf(stderr, "Out of memory adding symbol '%s' while merging tables %p and %p, malloc failed (tried to allocate %lu bytes).", j->id, a, b, sizeof(symbol_table));
-			exit(128);
+			exit(42);
 		}
 
 		i->id = strdup(j->id);
@@ -114,7 +114,7 @@ symbol_table *symbol_table_merge(symbol_table *a, symbol_table *b, bool check) {
 
 		if (i->next == NULL) {
 			fprintf(stderr, "Out of memory adding symbol '%s' while merging tables %p and %p, malloc failed (tried to allocate %lu bytes).", j->id, a, b, sizeof(symbol_table));
-			exit(128);
+			exit(42);
 		}
 
 		i->id = strdup(j->id);
