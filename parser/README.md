@@ -65,6 +65,6 @@ Zum angegebenen Termin stehen im Verzeichnis `~/abgabe/parser` die maßgeblichen
 
 ## Hinweis
 Die Verwendung von Präzedenzdeklarationen von `yacc` kann leicht zu Fehlern führen, die man nicht so schnell bemerkt (bei dieser Grammatik sind sie sowieso sinnlos). Konflikte in der Grammatik sollten Sie durch Umformen
-der Grammatik beseitigen; yacc löst den Konflikt zwar, aber nicht unbedingt in der von Ihnen gewünschten Art.
+der Grammatik beseitigen; yacc löst den Konflikt zwar, aber nicht unbedingt in der von Ihnen gewünschten Art.  
 Links- oder Rechtsrekursion? Also: Soll das rekursive Vorkommen eines Nonterminals als erstes (links) oder als letztes (rechts) auf der rechten Seite der Regel stehen? Bei `yacc`/`bison` und anderen LR-basierten Parsergeneratoren funktioniert beides. Sie sollten sich daher in erster Linie danach richten, was leichter geht, z.B. weil es Konflikte vermeidet oder weil es einfachere Attributierungsregeln erlaubt. Z. B. kann man mittels Linksrekursion bei der Subtraktion einen Parse-Baum erzeugen, der auch dem Auswertungsbaum entspricht. Sollte es keine anderen Gründe geben, kann man der Linksrekur-
 sion den Vorzug geben, weil sie mit einer konstanten Tiefe des Parser-Stacks auskommt.
