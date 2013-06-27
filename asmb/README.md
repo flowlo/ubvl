@@ -10,10 +10,10 @@ Gegeben ist folgende C-Funktion:
 #include <stddef.h>
 size_t asmb(char *s, size_t n)
 {
-  size_t c=0;
+  size_t c = 0;
   size_t i;
-  for (i=0; i<n; i++) {
-    if (s[i]==’ ’)
+  for (i = 0; i < n; i++) {
+    if (s[i] == ' ')
       c++;
   }
   return c;
