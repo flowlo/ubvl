@@ -19,10 +19,8 @@ int asma(char *s) {
 }
 ```
 
-Schreiben Sie diese Funktion in Assembler unter Verwendung von `pcmpeqb`.
-Zusätzlich dürften die Befehle `popcnt` und `pmovmskb` <sup>2</sup> nutzlich sein. Dabei zählt der Befehl `POPCNT r/m64, reg64` die Anzahl der Bits im Quelloperanden und speichert sie im Zieloperanden.
-Am einfachsten tun Sie sich dabei wahrscheinlich, wenn Sie eine einfache
-C-Funktion wie
+Schreiben Sie diese Funktion in Assembler unter Verwendung von `pcmpeqb`. Zusätzlich dürften die Befehle `popcnt` und `pmovmskb` <sup>2</sup> nutzlich sein. Dabei zählt der Befehl `POPCNT r/m64, reg64` die Anzahl der Bits im Quelloperanden und speichert sie im Zieloperanden.  
+Am einfachsten tun Sie sich dabei wahrscheinlich, wenn Sie eine einfache C-Funktion wie
 
 ```c
 void asma(unsigned long x[])
@@ -31,14 +29,10 @@ void asma(unsigned long x[])
 }
 ```
 
-mit z. B. `gcc -O -S` in Assembler ubersetzen und sie dann verändern. Dann
-stimmt schon das ganze Drumherum. Die Originalfunktion auf diese Weise
-zu übersetzen ist auch recht lehrreich, aber vor allem, um zu sehen, wie man
-es nicht machen soll.
+mit z. B. `gcc -O -S` in Assembler ubersetzen und sie dann verändern. Dann stimmt schon das ganze Drumherum. Die Originalfunktion auf diese Weise zu übersetzen ist auch recht lehrreich, aber vor allem, um zu sehen, wie man es nicht machen soll.
 
 ## Hinweis
-Beachten Sie, dass Sie nur dann Punkte bekommen, wenn Ihre Version `pcmpeqb`
-verwendet und korrekt ist, also bei gleicher (zulässiger) Eingabe das gleiche Resultat liefert wie das Original.
+Beachten Sie, dass Sie nur dann Punkte bekommen, wenn Ihre Version `pcmpeqb` verwendet und korrekt ist, also bei gleicher (zulässiger) Eingabe das gleiche Resultat liefert wie das Original.  
 Zum Assemblieren und Linken verwendet man am besten `gcc`, der Compiler-Treiber kümmert sich dann um die richtigen Optionen für `as` und `ld`.
 
 ## Abgabe
