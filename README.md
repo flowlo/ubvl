@@ -6,10 +6,10 @@
 This repository contains my work for [Compilers (german: _Übersetzerbau_)](http://www.complang.tuwien.ac.at/ubvl/) at Vienna University of Technology (summer semester of 2013).
 
 ## Tasks
-Over the semester we had to do accomplish 8 tasks. The first two (`asm?`) focused on writing AMD64 assembly, whereas the following six constructed a compiler for a primitive language. Refer to the original assignments (german) in the corresponding subdirectories.
+Throughout the semester we were to accomplish eight tasks. The first two (`asm?`) focused on writing AMD64 assembly, whereas the following six constructed a compiler for a primitive language. Refer to the original assignments (German) in the corresponding subdirectories.
 
 ## Tests
-We tested our compiler against specific cases which can be found [here](https://github.com/flowlo/ubvl-test).
+We tested our compilers against specific cases which can be found [here](https://github.com/flowlo/ubvl-test).
 
 ## Similar repositories
 
